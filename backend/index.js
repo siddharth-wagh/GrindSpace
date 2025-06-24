@@ -1,6 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
-import mongoose from "mongoose";
+import { connectDB } from "./src/lib/mongoose.config.js";
 
 dotenv.config();    
 const PORT = process.env.PORT;
@@ -9,5 +9,6 @@ const startServer = ()=>{
     app.listen(PORT,()=>{
         console.log(`Server started on port ${PORT}`)
     })
+    connectDB()
 }
 startServer();
