@@ -31,12 +31,9 @@ const groupSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
   }
-});
+ 
+},{timstamps:true});
 
 const Group = mongoose.model('Group', groupSchema);
 export default Group;

@@ -4,7 +4,8 @@ const messageSchema = new mongoose.Schema({
   group: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Group',
-    required: true
+    required: true,
+    index:true
   },
   sender: {
     type: mongoose.Schema.Types.ObjectId,
@@ -14,12 +15,10 @@ const messageSchema = new mongoose.Schema({
   content: {
     type: String,
     required: true
-  },
-  timestamp: {
-    type: Date,
-    default: Date.now
   }
-});
+},{timestamps:true});
+
+messageSchema.index({ createdAt: -1 });//indexing for latest msg sorting
 
 const Message = mongoose.model('Message', messageSchema);
 export default Message;

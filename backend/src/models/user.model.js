@@ -6,7 +6,8 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      lowercase: true
+      lowercase: true,
+      index:true
     },
     username: {
       type: String,
@@ -16,6 +17,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       minlength: 6,
+      index:true
     },
     profilePic: {
       type: String,
@@ -34,9 +36,7 @@ const userSchema = new mongoose.Schema(
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Group'
   }],
-  },
-  { timestamps: true }
-);
+  },{ timestamps: true });
 
 const User = mongoose.model("User", userSchema);
 
