@@ -18,7 +18,7 @@ const messageSchema = new mongoose.Schema({
   }
 },{timestamps:true});
 
-messageSchema.index({ createdAt: -1 });//indexing for latest msg sorting
+messageSchema.index({ group: 1, createdAt: -1 });//indexing for latest msg sorting and kepping same group msg together
 
 const Message = mongoose.model('Message', messageSchema);
 export default Message;
