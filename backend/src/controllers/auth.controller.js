@@ -1,6 +1,7 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import { generateToken } from "../lib/util.js";
+import cloudinary from "../lib/cloudinary.js";
 
 export const signup = async (req, res) => {
   const { username, email, password } = req.body;
@@ -19,6 +20,7 @@ export const signup = async (req, res) => {
       username,
       email,
       password: hashedPassword,
+      status: "online"
     });
     if (newUser) {
       generateToken(newUser._id, res);
@@ -53,6 +55,7 @@ export const login = async (req, res) => {
     }
 
     generateToken(user._id, res);
+    user.status = "online"
 
     res.status(200).json({
       _id: user._id,
@@ -76,6 +79,43 @@ export const checkauth = (req, res) => {
     }
 }
 
-// const export updateProfile = (req,res) => {
-//     const {pfp, about} = req.body;
-// }
+export const updateProfile = async (req, res) => {
+  try {
+  
+    const { profilePic, about } = req.body;
+    const userId = req.user._id;
+
+    if (!profilePic  || !about) {
+      return res.status(400).json({ message: "Fill Details" });
+    }
+
+    const uploadResponse = await cloudinary.uploader.upload(profilePic);
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { profilePic: uploadResponse.secure_url,
+        about:about
+       },
+      { new: true } 
+    );
+
+    res.status(200).json(updatedUser);
+   
+  } catch (error) {
+    console.log("error in update profile:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const logout = async (req, res) => { //loggin out means clearing out cookies thatsall
+  try {
+    const userId = req.user._id;
+
+   
+    await User.findByIdAndUpdate(userId, { status: "offline" });
+    res.cookie("jwt", "", { maxAge: 0 });
+    res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    console.log("Error in logout controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
