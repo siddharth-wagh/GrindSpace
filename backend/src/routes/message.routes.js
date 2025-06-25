@@ -1,7 +1,8 @@
 import express from "express";
-import { createMessage } from "../controllers/message.controller.js";
+import { createMessage ,getAllMessagesFromGroup} from "../controllers/message.controller.js";
 import { protectRoute } from "../middlewares/auth.middleware.js";
 const router = express.Router();
 
-router.post("/create",protectRoute,createMessage);
+router.post("/create/:groupId",protectRoute,createMessage);
+router.get("/getAllMessages/:groupId",protectRoute,getAllMessagesFromGroup);
 export default router;
