@@ -28,9 +28,9 @@ const groupSchema = new mongoose.Schema({
     ref: 'User'
   }],
   tags: {
-  type: [String],
-  default: [],
-  validate: [arrayLimit, 'You can add up to 5 tags only']
+    type: [String],
+    default: [],
+    validate: [arrayLimit, 'You can add up to 5 tags only']
   },
   jitsiRoomName: {
     type: String,
@@ -38,9 +38,9 @@ const groupSchema = new mongoose.Schema({
     unique: true
   },
   joinToken: {
-  type: String,
-  select: false
-}
+    type: String,
+    select: false
+  }
 
  
 },{timstamps:true});

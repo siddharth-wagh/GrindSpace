@@ -7,7 +7,7 @@ export const signup = async (req, res) => {
   const { username, email, password } = req.body;
   try {
     if (!username || !email || !password) {
-      return res.status(400).json({ messgae: "All Fields Are Required" });
+      return res.status(400).json({ message: "All Fields Are Required" });
     }
     const user = await User.findOne({ email });
 
@@ -84,7 +84,7 @@ export const updateProfile = async (req, res) => {
   
     const { profilePic, about } = req.body;
     const userId = req.user._id;
-
+//todo:bug
     if (!profilePic  || !about) {
       return res.status(400).json({ message: "Fill Details" });
     }
