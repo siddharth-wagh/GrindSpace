@@ -6,7 +6,7 @@ import cloudinary from "../lib/cloudinary.js";
 export const signup = async (req, res) => {
   const {  email, password } = req.body;
   try {
-    if (!email || !password) {
+    if (!username || !email || !password) {
       return res.status(400).json({ messgae: "All Fields Are Required" });
     }
     const user = await User.findOne({ email });
@@ -83,7 +83,7 @@ export const updateProfile = async (req, res) => {
     const { profilePic, about, username } = req.body;
     const userId = req.user._id;
 
-    if (!profilePic  || !about || !username) {
+    if (!profilePic  || !about) {
       return res.status(400).json({ message: "Fill Details" });
     }
 

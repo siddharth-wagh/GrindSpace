@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema(
     },
     about: {
       type: String,
-      required: true,
+      
     },
     status: {
       type: String,
