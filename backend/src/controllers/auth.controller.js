@@ -105,3 +105,17 @@ export const updateProfile = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const logout = async (req, res) => { //loggin out means clearing out cookies thatsall
+  try {
+    const userId = req.user._id;
+
+   
+    await User.findByIdAndUpdate(userId, { status: "offline" });
+    res.cookie("jwt", "", { maxAge: 0 });
+    res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    console.log("Error in logout controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
