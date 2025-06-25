@@ -4,7 +4,7 @@ import { generateToken } from "../lib/util.js";
 import cloudinary from "../lib/cloudinary.js";
 
 export const signup = async (req, res) => {
-  const {  email, password } = req.body;
+  const {  email, password , username} = req.body;
   try {
     if (!username || !email || !password) {
       return res.status(400).json({ messgae: "All Fields Are Required" });
@@ -18,6 +18,7 @@ export const signup = async (req, res) => {
 
     const newUser = new User({
       email,
+      username,
       password: hashedPassword,
       status: "online"
     });
@@ -28,6 +29,7 @@ export const signup = async (req, res) => {
       res.status(201).json({
         _id: newUser._id,
         email: newUser.email,
+        username : newUser.username
       });
     } else {
       res.status(400).json({ message: "Invalid user data" });
@@ -80,7 +82,7 @@ export const checkauth = (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
   
-    const { profilePic, about, username } = req.body;
+    const { profilePic, about } = req.body;
     const userId = req.user._id;
 
     if (!profilePic  || !about) {
@@ -92,7 +94,6 @@ export const updateProfile = async (req, res) => {
       userId,
       { profilePic: uploadResponse.secure_url,
         about:about,
-        username : username,
         profileSetup:true,
        },
       { new: true } 
