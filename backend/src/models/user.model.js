@@ -27,12 +27,12 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-        status: {
+    status: {
       type: String,
       enum: ["online", "offline", "studying"],
       default: "offline",
     },
-      groups: [{
+    groups: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Group'
   }],
