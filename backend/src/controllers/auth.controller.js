@@ -4,9 +4,9 @@ import { generateToken } from "../lib/util.js";
 import cloudinary from "../lib/cloudinary.js";
 
 export const signup = async (req, res) => {
-  const { username, email, password } = req.body;
+  const {  email, password } = req.body;
   try {
-    if (!username || !email || !password) {
+    if (!email || !password) {
       return res.status(400).json({ messgae: "All Fields Are Required" });
     }
     const user = await User.findOne({ email });
@@ -17,7 +17,6 @@ export const signup = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = new User({
-      username,
       email,
       password: hashedPassword,
       status: "online"
@@ -28,7 +27,6 @@ export const signup = async (req, res) => {
 
       res.status(201).json({
         _id: newUser._id,
-        username: newUser.username,
         email: newUser.email,
       });
     } else {
@@ -82,10 +80,10 @@ export const checkauth = (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
   
-    const { profilePic, about } = req.body;
+    const { profilePic, about, username } = req.body;
     const userId = req.user._id;
 
-    if (!profilePic  || !about) {
+    if (!profilePic  || !about || !username) {
       return res.status(400).json({ message: "Fill Details" });
     }
 
@@ -93,7 +91,9 @@ export const updateProfile = async (req, res) => {
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { profilePic: uploadResponse.secure_url,
-        about:about
+        about:about,
+        username : username,
+        profileSetup:true,
        },
       { new: true } 
     );

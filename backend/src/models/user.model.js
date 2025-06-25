@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
       lowercase: true,
-      index:true
+      index: true,
     },
     username: {
       type: String,
@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       minlength: 6,
-      index:true
+      index: true,
     },
     profilePic: {
       type: String,
@@ -32,11 +32,19 @@ const userSchema = new mongoose.Schema(
       enum: ["online", "offline", "studying"],
       default: "offline",
     },
-    groups: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Group'
-  }],
-  },{ timestamps: true });
+    profileSetup: {
+      type: Boolean,
+      default: false,
+    },
+    groups: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Group",
+      },
+    ],
+  },
+  { timestamps: true }
+);
 
 const User = mongoose.model("User", userSchema);
 

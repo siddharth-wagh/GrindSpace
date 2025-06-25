@@ -1,35 +1,75 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import Auth from "./pages/auth"
+import Homepage from './pages/home'
+import Profile from './pages/profile'
+import { useAppStore } from "./store";
+import {} from "./utils/constants";
+import { useState ,useEffect} from "react";
+import { BrowserRouter, Route, Routes, Navigate, useNavigate } from 'react-router-dom'
+
+import "./App.css";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const { userInfo, setUserInfo } = useAppStore();
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const getUserData = async () => {
+      try {
+        const response = await apiClient.get(GET_USER_INFO, {
+          withCredentials: true,
+        });
+        if (response.status === 200 && response.data.user.id) {
+          setUserInfo(response.data.user);
+        } else {
+          setUserInfo(undefined);
+        }
+        console.log({ response });
+      } catch (error) {
+        setUserInfo(undefined);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (!userInfo) {
+      getUserData();
+    } else {
+      setLoading(false);
+    }
+  }, [userInfo, setUserInfo]);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div>
+      <BrowserRouter>
+        <Routes>
+          <Route
+            path="/auth"
+            element={
+             
+                <Auth />
+              
+            }
+          />
+          <Route
+            path="/home"
+            element={
+              
+                
+                <Homepage />
+              
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              
+                <Profile />
+              
+            }
+          />
+          <Route path="*" element={<Navigate to="/auth" />} />
+        </Routes>
+      </BrowserRouter>
+    </div>
+  );
 }
 
-export default App
+export default App;
