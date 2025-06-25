@@ -3,7 +3,9 @@ import dotenv from "dotenv";
 import { connectDB } from "./src/lib/mongoose.config.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import MessageRoute from "./src/routes/message.route.js";
+import MessageRoute from "./src/routes/message.routes.js";
+import authRoutes from "./src/routes/auth.routes.js"
+
 dotenv.config();    
 const PORT = process.env.PORT;
 const app = express();
@@ -19,6 +21,8 @@ app.use(cors({ origin: "http://localhost:5173",
     credentials: true }));
 
 app.use("/api/messages",MessageRoute);
+app.use("/api/auth", authRoutes);
+
 const startServer = ()=>{
 
     app.listen(PORT,()=>{

@@ -12,10 +12,12 @@ const messageSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  content: {
-    type: String,
-    required: true
-  }
+  text: {
+    type: String // for text messages
+  },
+  image: {
+    type: String // for image URL if message has an image
+  },
 },{timestamps:true});
 
 messageSchema.index({ group: 1, createdAt: -1 });//indexing for latest msg sorting and kepping same group msg together
