@@ -10,7 +10,7 @@ import "./App.css";
 
 function App() {
   const { userInfo, setUserInfo } = useAppStore();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const getUserData = async () => {
@@ -18,12 +18,14 @@ function App() {
         const response = await apiClient.get(GET_USER_INFO, {
           withCredentials: true,
         });
-        if (response.status === 200 && response.data.user?.id) {
-          setUserInfo(response.data.user);
+        if (response.status === 200 && response.data._id) {
+          setUserInfo(response.data);
+         
         } else {
           setUserInfo(undefined);
+         
         }
-        console.log({ response });
+    
       } catch (error) {
         setUserInfo(undefined);
       } finally {

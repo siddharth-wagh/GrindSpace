@@ -1,7 +1,11 @@
 import multer from "multer";
 import path from "path";
+<<<<<<< HEAD
 import pkg from 'uuid';
 const { v4: uuidv4 } = pkg;
+=======
+
+>>>>>>> 8b58ac161bd06db36442ac8d6732568699217eb5
 
 // Store the file temporarily in memory (not on disk)
 const storage = multer.memoryStorage();

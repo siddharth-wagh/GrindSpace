@@ -1,16 +1,23 @@
 import Group from "../models/group.model.js";
-
+import crypto from 'crypto';
+import User from "../models/user.model.js"
+import { generateGroupToken } from "../lib/util.js";
 
 export const createGroup = async (req, res) => {
   try {
-    const { name, description, isPublic, tags } = req.body;
+    const { name, description, isPrivate, tags } = req.body;
     const leader = req.user._id;
 
     if (!name) {
       return res.status(400).json({ message: "empty name" });
     }
 
-    //todo: add logic for private room
+    
+    
+    let joinToken;
+    if(isPrivate) {
+        joinToken = generateGroupToken();
+    }
 
     const group = await Group.create({
       name,
@@ -19,6 +26,8 @@ export const createGroup = async (req, res) => {
       leader,
       coLeaders: [],
       members: [leader],
+      joinToken,
+      isPrivate,
       jitsiRoomName: `room-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
     });
 
@@ -64,9 +73,10 @@ export const joinGroup = async (req, res) => {
   try {
     const userId = req.user._id;
     const groupId = req.params.groupId;
-    //todo for private
+    
+    
 
-    const group = await Group.findById(groupId);
+    const group = await Group.findById(groupId).select("+joinToken");
 
     if (!group) {
       return res.status(404).json({ message: "group not found" });
@@ -76,6 +86,12 @@ export const joinGroup = async (req, res) => {
       await Group.findByIdAndUpdate(groupId, {
         $addToSet: { members: userId }, // avoids duplicates
       });
+    }
+
+    
+   
+    if(group.isPrivate && group.joinToken!==req.body.joinToken) {
+        return res.status(404).json({ message: "invalid join token" });
     }
 
     await User.findByIdAndUpdate(userId, {

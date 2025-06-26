@@ -10,9 +10,9 @@ const groupSchema = new mongoose.Schema({
     type: String
   },
 
-  isPublic: {
+  isPrivate: {
     type: Boolean,
-    default: true
+    default: false
   },
   leader: {
     type: mongoose.Schema.Types.ObjectId,
