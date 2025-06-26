@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-
+import crypto from "crypto"
 export const generateToken = (userId, res) => {
   const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
     expiresIn: "7d",
@@ -13,4 +13,8 @@ export const generateToken = (userId, res) => {
   });
 
   return token;
+};
+
+export const generateGroupToken = () => {
+  return crypto.randomBytes(32).toString('hex'); // 64 characters
 };
