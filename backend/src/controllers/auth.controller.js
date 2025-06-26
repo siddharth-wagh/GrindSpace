@@ -72,6 +72,7 @@ export const login = async (req, res) => {
 export const checkauth = (req, res) => {
     try {
         res.status(200).json(req.user)
+        console.log("postman ")
     }
     catch(error){
         console.log("error in auth controller", error.message);
@@ -81,31 +82,38 @@ export const checkauth = (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-  
     const { profilePic, about } = req.body;
     const userId = req.user._id;
 
-    if (!profilePic  || !about) {
-      return res.status(400).json({ message: "Fill Details" });
+    const updateFields = {};
+    const DEFAULT_PFP = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+
+    if (profilePic && profilePic !== DEFAULT_PFP) {
+      const uploadResponse = await cloudinary.uploader.upload(profilePic);
+      updateFields.profilePic = uploadResponse.secure_url;
+    }
+    if (about !== undefined && about.trim() !== "") {
+      updateFields.about = about.trim();
     }
 
-    const uploadResponse = await cloudinary.uploader.upload(profilePic);
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { profilePic: uploadResponse.secure_url,
-        about:about,
-        profileSetup:true,
-       },
-      { new: true } 
-    );
+    updateFields.profileSetup = true;
+
+    const updatedUser = await User.findByIdAndUpdate(userId, updateFields, {
+      new: true,
+    });
+
+    if (!updatedUser) {
+      const currentUser = await User.findById(userId);
+      return res.status(200).json(currentUser);
+    }
 
     res.status(200).json(updatedUser);
-   
   } catch (error) {
     console.log("error in update profile:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 export const logout = async (req, res) => { //loggin out means clearing out cookies thatsall
   try {
@@ -118,5 +126,34 @@ export const logout = async (req, res) => { //loggin out means clearing out cook
   } catch (error) {
     console.log("Error in logout controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+
+export const addProfileImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "File is required" });
+    }
+
+    // Convert buffer to base64 and upload to Cloudinary
+    const base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+
+    const result = await cloudinary.uploader.upload(base64Image, {
+      folder: "profile_images",
+    });
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { image: result.secure_url },
+      { new: true, runValidators: true }
+    );
+
+    return res.status(200).json({
+      image: updatedUser.image,
+    });
+  } catch (error) {
+    console.error("Error during addProfileImage:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
