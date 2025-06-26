@@ -9,10 +9,12 @@ import { apiClient } from "./lib/api-client"; // make sure this is imported
 import "./App.css";
 
 function App() {
-  const { userInfo, setUserInfo } = useAppStore();
+  const userInfo = useAppStore((state) => state.userInfo);
+const setUserInfo = useAppStore((state) => state.setUserInfo);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (userInfo !== null) return; 
     const getUserData = async () => {
       try {
         const response = await apiClient.get(GET_USER_INFO, {
@@ -25,8 +27,8 @@ function App() {
           setUserInfo(undefined);
          
         }
-    
       } catch (error) {
+        console.log(error);
         setUserInfo(undefined);
       } finally {
         setLoading(false);

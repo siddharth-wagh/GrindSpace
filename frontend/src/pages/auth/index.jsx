@@ -1,13 +1,15 @@
 import { SIGNUP_ROUTE, LOGIN_ROUTE } from "@/utils/constants"
 import { toast } from "sonner";
-import { useAppStore } from "@/store";
+import { useAppStore } from "../../store/index.js";
 import { useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { apiClient } from "@/lib/api-client";
 
 const Auth = () => {
     const navigate = useNavigate();
-    const { setUserInfo, userInfo } = useAppStore();
+    const userInfo = useAppStore((state) => state.userInfo);
+const setUserInfo = useAppStore((state) => state.setUserInfo);
+
     const [email, setEmail] = useState("");
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
@@ -106,7 +108,7 @@ const Auth = () => {
     const isAuthenticated = !!userInfo;
     
     return isAuthenticated ? (
-        <Navigate to="/homepage" />
+        <Navigate to="/home" /> 
     ) : (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4">
             <div className="w-full max-w-md">
