@@ -41,15 +41,17 @@ export const signup = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-  const { email, password } = req.body;
+  
   try {
+    const { email, password } = req.body;
     const user = await User.findOne({ email });
-
+   
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
+     
     if (!isPasswordCorrect) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
@@ -64,14 +66,16 @@ export const login = async (req, res) => {
      
     });
   } catch (error) {
-    console.log("Error in login controller", error.message);
+    console.log("Error in login controller", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
-export const checkauth = (req, res) => {
+export const checkauth = async (req, res) => {
     try {
-        res.status(200).json(req.user)
+      const userId = req.user._id;
+      const user = await User.findById(userId).populate("groups");
+        res.status(200).json(user);
         console.log("postman ")
     }
     catch(error){

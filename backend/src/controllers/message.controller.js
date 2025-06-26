@@ -66,7 +66,7 @@ export const getAllMessagesFromGroup = async(req,res)=>{
       .sort({ createdAt: -1 }) // latest first
       .limit(20)
       .populate("sender", "username profilePic");
-
+   
     // Optional: reverse to show oldest → newest in UI
     return res.status(200).json({
       data: messages.reverse(),
