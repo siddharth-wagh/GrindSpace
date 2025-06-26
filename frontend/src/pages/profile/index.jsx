@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom";
-import { GET_USER_INFO, UPDATE_PROFILE_ROUTE, UPDATE_PROFILE_IMAGE_ROUTE } from "../../utils/constants";
+import { GET_USER_INFO, UPDATE_PROFILE_ROUTE,  } from "../../utils/constants";
 
 const Profile = () => {
 const navigate = useNavigate();
@@ -37,7 +37,7 @@ const handleImageChange = async (event) => {
   formData.append("profile-image", file); // Must match multer field name
 
   try {
-    const response = await apiClient.post(UPDATE_PROFILE_IMAGE_ROUTE, formData, {
+    const response = await apiClient.post(UPDATE_PROFILE_ROUTE, formData, {
       withCredentials: true,
       headers: {
         "Content-Type": "multipart/form-data",
