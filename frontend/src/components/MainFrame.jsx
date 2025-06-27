@@ -6,11 +6,13 @@ const MainFrame = () => {
   const { currentGroup, messages, setMessages, userInfo } = useAppStore();
   const [text, setText] = useState("");
   const [image, setImage] = useState(null);
-
+  
   async function getAllMessages() {
     if (!currentGroup?._id) return;
     try {
+      
       const msg = await apiClient.get(`/api/messages/getAllMessages/${currentGroup._id}`);
+      console.log("THis is all msg object",msg);
       setMessages(msg.data.data);
       console.log("this is the messages", msg.data.data);
     } catch (error) {
@@ -22,8 +24,24 @@ const MainFrame = () => {
     getAllMessages();
   }, [currentGroup]);
 
-  const sendMessage = () => {
+  const sendMessage = async() => {
     // your send logic here
+       if (!text && !image) return;
+
+    const formData = new FormData();
+    formData.append("text", text);
+    if (image) {
+      formData.append("image", image); // must match backend multer field name
+    }
+      try {
+         await apiClient.post(`/api/messages/create/${currentGroup._id}`,formData);
+      setText("");
+      setImage(null);
+      getAllMessages();
+      } catch (error) {
+        console.log(error);
+      }
+     
   };
 
   return (
@@ -43,14 +61,25 @@ const MainFrame = () => {
             return (
               <div
                 key={idx}
-                className={`max-w-xs md:max-w-md lg:max-w-lg px-4 py-2 rounded-lg text-sm ${
+                className={`max-w-xs md:max-w-md lg:max-w-lg px-4 py-2 rounded-lg text-sm space-y-2 ${
                   isOwn
                     ? "bg-blue-600 text-white ml-auto"
                     : "bg-white text-gray-800 mr-auto"
                 } shadow`}
               >
-                {message.text}
+                {/* Show image if exists */}
+                {message.image && (
+                  <img
+                    src={message.image}
+                    alt="uploaded"
+                    className="rounded-lg max-w-full h-auto"
+                  />
+                )}
+
+                {/* Show text if exists */}
+                {message.text && <p>{message.text}</p>}
               </div>
+
             );
           })
         ) : (

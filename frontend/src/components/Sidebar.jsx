@@ -8,8 +8,11 @@ const setUserInfo = useAppStore((state) => state.setUserInfo);
   const userInfo = useAppStore((state) => state.userInfo);
   const setCurrentGroup = useAppStore((state) => state.setCurrentGroup);
   const setMessages = useAppStore((state) => state.setMessages);
-const [groupCreated, setGroupCreated] = useState(false);
+  const [groupCreated, setGroupCreated] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showingSearchSidebar, setShowingSearchSidebar] = useState(false); // new
   const [newGroup, setNewGroup] = useState({
     name: "",
     description: "",
@@ -52,18 +55,79 @@ const [groupCreated, setGroupCreated] = useState(false);
     fetchUserInfo();
   }
 }, [groupCreated]);
+
+useEffect(() => {
+  const delayDebounce = setTimeout(() => {
+    if (search.trim() !== "") {
+      fetchGroupSuggestions(search);
+    } else {
+      setSearchResults([]);
+      setShowSuggestions(false);
+    }
+  }, 300); // debounce
+
+  return () => clearTimeout(delayDebounce);
+}, [search]);
+
+const fetchGroupSuggestions = async (query) => {
+  try {
+    const res = await apiClient.get(`/api/group/search?query=${query}&full=false`);
+    setSearchResults(res.data);
+    setShowSuggestions(true);
+  } catch (err) {
+    console.error("Search failed", err);
+    setSearchResults([]);
+    setShowSuggestions(false);
+  }
+};
+
+const displaygroups = async(e)=>{
+    if (e.key === "Enter" && search.trim() !== "") {
+    e.preventDefault();
+    try {
+      const res = await apiClient.get(`/api/group/search?query=${search}&full=true`);
+      setSearchResults(res.data);
+      setShowSuggestions(false);
+      setShowingSearchSidebar(true);
+    } catch (err) {
+      console.error("Search failed", err);
+    }
+  }
+
+}
   return (
     <>
       {/* Sidebar */}
       <div className="w-64 h-screen bg-gray-900 text-white flex flex-col p-4 space-y-4 shadow-md">
         {/* Search */}
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search groups"
-          className="px-4 py-2 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+          <div className="relative">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={displaygroups}
+            placeholder="Search groups"
+            className="w-full px-4 py-2 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          {showSuggestions && searchResults.length > 0 && (
+            <div className="absolute z-50 mt-1 w-full bg-white rounded shadow-md max-h-60 overflow-y-auto">
+              {searchResults.map((group) => (
+                <div
+                  key={group._id}
+                  onClick={() => {
+                    openGroup(group);
+                    setSearch("");
+                    setShowSuggestions(false);
+                  }}
+                  className="px-4 py-2 cursor-pointer hover:bg-gray-100 text-black"
+                >
+                  {group.name}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
 
         {/* Group List */}
         <div className="flex-1 overflow-y-auto">

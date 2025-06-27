@@ -109,3 +109,29 @@ export const joinGroup = async (req, res) => {
     });
   }
 };
+
+
+export const searchGroup=async(req,res)=>{
+   const { query = "", full } = req.query;
+
+    if (!query.trim()) {
+    return res.status(400).json({ error: "Query string is required." });
+    }
+  try {
+
+    const searchRegex = new RegExp(query, "i");
+
+     const matchedGroups = await Group.find({
+      name: { $regex: searchRegex },
+    })
+      .limit(full === "true" ? 0 : 10) // 10 for suggestions, unlimited for full results
+      .select("name description isPrivate tags"); // keep it lightweight
+
+    res.status(200).json(matchedGroups);
+  }
+
+   catch (error) {
+        console.error("Group search failed:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}

@@ -5,12 +5,13 @@ import cloudinary from "../lib/cloudinary.js";
 
 export const createMessage = async (req,res)=>{
     try {
-       
+     
         const {groupId} =  req.params;
         const sender = req.user._id;
         
-        const {image,text} = req.body;
-        
+        const {text} = req.body;
+        const image = req.file;
+     
         const group = await Group.findById(groupId);
         if(!group) {
             return res.status(400).json({ message:"incorrect groupid" });
@@ -19,10 +20,13 @@ export const createMessage = async (req,res)=>{
             return res.status(400).json({ message:"provide some data" });
         } 
         let imageurl;
-        if(image) {
-             const uploadResponse = await cloudinary.uploader.upload(image);
-             imageurl = uploadResponse.secure_url;
-        }
+        if (image) {
+        const base64Image = `data:${image.mimetype};base64,${image.buffer.toString("base64")}`;
+        const uploadResponse = await cloudinary.uploader.upload(base64Image, {
+          folder: "messages",
+      });
+      imageurl = uploadResponse.secure_url;
+    }
         const message = await Message.create({
             group:group._id,
             sender,
