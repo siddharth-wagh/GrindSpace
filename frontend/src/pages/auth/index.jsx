@@ -59,13 +59,11 @@ const setUserInfo = useAppStore((state) => state.setUserInfo);
                     { email, password },
                     { withCredentials: true }
                 );
-                if (response.status === 200 && response.data.user.id) {
-                    setUserInfo({ ...response.data.user, token: response.data.token }); 
-                    if (response.data.user.profileSetup) {
-                        navigate("/homepage");
-                    } else {
-                        navigate("/profile");
-                    }
+                if (response.status === 200 && response.data._id) {
+                    setUserInfo({ ...response.data}); 
+                    
+                        navigate("/home");
+                   
                 } else {
                     setUserInfo(undefined);
                 }
@@ -88,13 +86,11 @@ const setUserInfo = useAppStore((state) => state.setUserInfo);
                     { email, username, password },
                     { withCredentials: true }
                 );
-                if (response.status === 201) {
-                    setUserInfo({ ...response.data.user, token: response.data.token });
-                                        if (response.data.user.profileSetup) {
-                        navigate("/homepage");
-                    } else {
-                        navigate("/profile");
-                    }
+                if (response.status === 201 && response.data._id) {
+                    setUserInfo({ ...response.data});
+                                       
+                        navigate("/home");
+                    
                 }
                 // console.log(response);
             } catch (error) {
@@ -107,9 +103,7 @@ const setUserInfo = useAppStore((state) => state.setUserInfo);
 
     const isAuthenticated = !!userInfo;
     
-    return isAuthenticated ? (
-        <Navigate to="/home" /> 
-    ) : (
+    return  (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4">
             <div className="w-full max-w-md">
                 <div className="bg-white rounded-lg shadow-xl p-8">
