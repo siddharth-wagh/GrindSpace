@@ -4,7 +4,7 @@ import { generateToken } from "../lib/util.js";
 import cloudinary from "../lib/cloudinary.js";
 
 export const signup = async (req, res) => {
-  const {  email, password , username} = req.body;
+  const { email, password, username } = req.body;
   try {
     if (!username || !email || !password) {
       return res.status(400).json({ messgae: "All Fields Are Required" });
@@ -20,7 +20,7 @@ export const signup = async (req, res) => {
       email,
       username,
       password: hashedPassword,
-      status: "online"
+      status: "online",
     });
     if (newUser) {
       generateToken(newUser._id, res);
@@ -29,7 +29,7 @@ export const signup = async (req, res) => {
       res.status(201).json({
         _id: newUser._id,
         email: newUser.email,
-        username : newUser.username
+        username: newUser.username,
       });
     } else {
       res.status(400).json({ message: "Invalid user data" });
@@ -55,14 +55,13 @@ export const login = async (req, res) => {
     }
 
     generateToken(user._id, res);
-    user.status = "online"
+    user.status = "online";
     await user.save();
 
     res.status(200).json({
       _id: user._id,
       username: user.username,
       email: user.email,
-     
     });
   } catch (error) {
     console.log("Error in login controller", error.message);
@@ -71,22 +70,20 @@ export const login = async (req, res) => {
 };
 
 export const checkauth = (req, res) => {
-    try {
-        res.status(200).json(req.user)
-        console.log("postman ")
-    }
-    catch(error){
-        console.log("error in auth controller", error.message);
-        res.status(500).json({message:"server errorr"})
-    }
-}
+  try {
+    res.status(200).json(req.user);
+    console.log("postman ");
+  } catch (error) {
+    console.log("error in auth controller", error.message);
+    res.status(500).json({ message: "server errorr" });
+  }
+};
 
-
-export const logout = async (req, res) => { //loggin out means clearing out cookies thatsall
+export const logout = async (req, res) => {
+  //loggin out means clearing out cookies thatsall
   try {
     const userId = req.user._id;
 
-   
     await User.findByIdAndUpdate(userId, { status: "offline" });
     res.cookie("jwt", "", { maxAge: 0 });
     res.status(200).json({ message: "Logged out successfully" });
@@ -95,7 +92,6 @@ export const logout = async (req, res) => { //loggin out means clearing out cook
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
-
 
 export const updateProfile = async (req, res) => {
   try {
@@ -125,7 +121,7 @@ export const updateProfile = async (req, res) => {
       };
 
       const result = await streamUpload(req.file.buffer); // wait for upload to complete
-     updateFields.profilePic = result.secure_url
+      updateFields.profilePic = result.secure_url;
 
       if (about && about.trim() !== "") {
         updateFields.about = about.trim();

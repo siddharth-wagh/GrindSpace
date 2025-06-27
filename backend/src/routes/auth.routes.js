@@ -8,7 +8,7 @@ router.post('/signup',signup)
 router.post('/login', login)
 router.get('/check',protectRoute, checkauth )
 
-router.put("/update-profile", protectRoute, upload.single("profile-image"), updateProfile);
+router.put("/update-profile", protectRoute, upload.single("profilePic"), updateProfile);
 
 router.post('/logout',protectRoute, logout)
 
