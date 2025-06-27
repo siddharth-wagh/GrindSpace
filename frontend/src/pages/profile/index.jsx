@@ -47,7 +47,7 @@ const Profile = () => {
     };
 
     fetchUserInfo();
-  }, [navigate, setUserInfo]);
+}, [profilepic]);
 
   const handleImageChange = async (event) => {
     const file = event.target.files[0];
