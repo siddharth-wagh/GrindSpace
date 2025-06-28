@@ -1,18 +1,27 @@
 import React, { useEffect, useState } from "react";
 import { useAppStore } from "../store";
 import { apiClient } from "../lib/api-client.js";
+import { io } from "socket.io-client";
+const socket = io("http://localhost:8000", { withCredentials: true });
 
 const MainFrame = () => {
   const { currentGroup, messages, setMessages, userInfo } = useAppStore();
   const [text, setText] = useState("");
   const [image, setImage] = useState(null);
-  
+  useEffect(() => {
+    if (currentGroup?._id) {
+      socket.emit("join-room", currentGroup._id);
+      console.log("🛜 Joined room:", currentGroup._id);
+    }
+  }, [currentGroup]);
+
   async function getAllMessages() {
     if (!currentGroup?._id) return;
     try {
-      
-      const msg = await apiClient.get(`/api/messages/getAllMessages/${currentGroup._id}`);
-      console.log("THis is all msg object",msg);
+      const msg = await apiClient.get(
+        `/api/messages/getAllMessages/${currentGroup._id}`
+      );
+      console.log("THis is all msg object", msg);
       setMessages(msg.data.data);
       console.log("this is the messages", msg.data.data);
     } catch (error) {
@@ -24,25 +33,42 @@ const MainFrame = () => {
     getAllMessages();
   }, [currentGroup]);
 
-  const sendMessage = async() => {
-    // your send logic here
-       if (!text && !image) return;
+  const sendMessage = async () => {
+    if (!text && !image) return;
 
     const formData = new FormData();
     formData.append("text", text);
-    if (image) {
-      formData.append("image", image); // must match backend multer field name
-    }
-      try {
-         await apiClient.post(`/api/messages/create/${currentGroup._id}`,formData);
+    if (image) formData.append("image", image);
+
+    try {
+      const res = await apiClient.post(
+        `/api/messages/create/${currentGroup._id}`,
+        formData
+      );
+      
       setText("");
       setImage(null);
-      getAllMessages();
-      } catch (error) {
-        console.log(error);
-      }
-     
+      const savedMessage = res.data?.data;
+    //  setMessages((prev) => [...(Array.isArray(prev) ? prev : []), savedMessage]);
+    } catch (error) {
+      console.error(error);
+    }
   };
+
+useEffect(() => {
+  const handleNewMessage = (messageData) => {
+    console.log("New message received:", messageData);
+    setMessages((prev) => [...(Array.isArray(prev) ? prev : []), messageData]);
+  };
+
+  socket.on("new-message", handleNewMessage);
+
+  return () => {
+    socket.off("new-message", handleNewMessage);
+  };
+}, []); // ✅ empty array = only run once
+
+
 
   return (
     <div className="flex flex-col h-screen w-full">
@@ -55,9 +81,13 @@ const MainFrame = () => {
 
       {/* Messages area */}
       <div className="flex-1 p-4 overflow-y-auto bg-gray-100 space-y-2">
-        {messages && messages.length > 0 ? (
+        {Array.isArray(messages) && messages.length > 0 ? (
           messages.map((message, idx) => {
-            const isOwn = message.sender._id === userInfo?._id;
+            const senderId =
+              typeof message.sender === "string"
+                ? message.sender
+                : message.sender?._id;
+            const isOwn = senderId === userInfo?._id;
             return (
               <div
                 key={idx}
@@ -79,7 +109,6 @@ const MainFrame = () => {
                 {/* Show text if exists */}
                 {message.text && <p>{message.text}</p>}
               </div>
-
             );
           })
         ) : (
@@ -101,12 +130,13 @@ const MainFrame = () => {
           onChange={(e) => setImage(e.target.files[0])}
           className="border border-gray-300 rounded-lg p-2 text-sm"
         />
-        <button
-          onClick={sendMessage}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all"
-        >
-          Send
-        </button>
+<button
+  type="button" // 🛑 prevent default form submission
+  onClick={sendMessage}
+  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all"
+>
+  Send
+</button>
       </div>
     </div>
   );
