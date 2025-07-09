@@ -7,7 +7,11 @@
     setUserInfo: (user) => { set({ userInfo: user }) },
 
     messages:[],
-    setMessages:(msg)=>{set({messages:msg})},
+    setMessages:(msg)=>{
+
+      set({messages:msg})
+    
+    },
     currentGroup:null,
     setCurrentGroup:(grp)=>{
    
