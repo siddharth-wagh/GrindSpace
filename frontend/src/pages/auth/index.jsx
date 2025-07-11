@@ -1,7 +1,7 @@
 import { SIGNUP_ROUTE, LOGIN_ROUTE } from "@/utils/constants"
 import { toast } from "sonner";
 import { useAppStore } from "../../store/index.js";
-import { useState } from "react";
+import { useState ,useEffect} from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { apiClient } from "@/lib/api-client";
 
@@ -17,6 +17,28 @@ const setUserInfo = useAppStore((state) => state.setUserInfo);
     const [loading, setLoading] = useState(false);
     const [isLogin, setIsLogin] = useState(true);
     
+    const [authCheckComplete, setAuthCheckComplete] = useState(false);
+
+    useEffect(() => {
+        const checkAuth = async () => {
+            try {
+                const res = await apiClient.get("/api/auth/check", {
+                    withCredentials: true,
+                });
+
+                if (res.status === 200 && res.data._id) {
+                    setUserInfo(res.data);      // Update global state
+                    navigate("/home");          // Redirect to home if logged in
+                }
+            } catch (err) {
+                console.log("Not authenticated or error:", err.message);
+            } finally {
+                setAuthCheckComplete(true);     // Proceed to render form
+            }
+        };
+
+        checkAuth();
+    }, []);
     const validateSignup = () => {
         if (!email.length) {
             toast.error("Email is required");
@@ -100,6 +122,13 @@ const setUserInfo = useAppStore((state) => state.setUserInfo);
             }
         }
     };
+    if (!authCheckComplete) {
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center text-white">
+            Checking authentication...
+        </div>
+    );
+}
 
     const isAuthenticated = !!userInfo;
     

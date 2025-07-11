@@ -16,12 +16,35 @@ const groupRef = useRef(currentGroup);
   const localStreamRef = useRef(null);
   const localVideoRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const [isMuted, setIsMuted] = useState(false);
+const [isVideoOff, setIsVideoOff] = useState(false);
 const scrollToBottom = () => {
   messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
 };
 useEffect(() => {
   scrollToBottom();
-}, [tempmessages]);
+}, [tempmessages]);useEffect(() => {
+  return () => {
+    if (inCall) {
+      // ✅ Notify backend
+      socket.emit("leave-call", groupRef.current._id);
+
+      // ✅ Close all peer connections
+      Object.values(peerConnections.current).forEach(pc => pc.close());
+      peerConnections.current = {};
+
+      // ✅ Stop local media stream
+      localStreamRef.current?.getTracks().forEach(track => track.stop());
+
+      // ✅ Remove remote video elements
+      const remoteContainer = document.getElementById("remoteVideos");
+      if (remoteContainer) remoteContainer.innerHTML = "";
+
+      console.log("🧹 Cleanup done on component unmount");
+    }
+  };
+}, [inCall]);
+
 useEffect(() => {
   groupRef.current = currentGroup;
 }, [currentGroup]);
@@ -195,16 +218,66 @@ const sendMessage = () => {
       {/* Video Section */}
       {/* Video Section – Only visible in call */}
 {inCall && (
-  <div className="flex flex-wrap gap-4 bg-black p-2 justify-center items-center">
-    <video
-      ref={localVideoRef}
-      autoPlay
-      muted
-      className="w-48 h-36 rounded shadow border-2 border-green-500"
-    />
-    <div id="remoteVideos" className="flex flex-wrap gap-4" />
+  <div className="fixed inset-0 z-50 bg-black flex flex-col">
+    {/* Video Grid */}
+    <div className="flex-1 flex flex-wrap items-center justify-center gap-4 p-4 overflow-auto">
+      <video
+        ref={localVideoRef}
+        autoPlay
+        muted
+        className="w-1/3 min-w-[300px] aspect-video rounded-lg border-4 border-green-500 shadow-lg"
+      />
+      <div id="remoteVideos" className="flex flex-wrap gap-4 justify-center items-center" />
+    </div>
+
+    {/* Controls */}
+    <div className="bg-gray-800 p-4 flex justify-center gap-4 items-center">
+      <button
+        onClick={() => {
+          setIsMuted(!isMuted);
+          localStreamRef.current?.getAudioTracks().forEach(track => track.enabled = isMuted);
+        }}
+        className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded"
+      >
+        {isMuted ? "Unmute" : "Mute"}
+      </button>
+
+      <button
+        onClick={() => {
+          setIsVideoOff(!isVideoOff);
+          localStreamRef.current?.getVideoTracks().forEach(track => track.enabled = isVideoOff);
+        }}
+        className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded"
+      >
+        {isVideoOff ? "Start Video" : "Stop Video"}
+      </button>
+
+      <button
+  onClick={() => {
+    // ✅ Notify backend first
+    socket.emit("leave-call", currentGroup._id);
+
+    // Cleanup peer connections
+    Object.values(peerConnections.current).forEach(pc => pc.close());
+    peerConnections.current = {};
+
+    // Stop all local media tracks
+    localStreamRef.current?.getTracks().forEach(track => track.stop());
+
+    // Clear remote video container
+    document.getElementById("remoteVideos").innerHTML = "";
+
+    setInCall(false);
+  }}
+  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+>
+  End Call
+</button>
+
+    </div>
   </div>
 )}
+
 
       {/* Messages area */}
       <div className="flex-1 p-4 overflow-y-auto bg-gray-100 space-y-2">

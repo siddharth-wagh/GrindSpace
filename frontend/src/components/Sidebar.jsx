@@ -44,8 +44,7 @@ const Sidebar = () => {
       console.error("Error creating group", error);
     }
   };
-  useEffect(() => {
-    const fetchUserInfo = async () => {
+   const fetchUserInfo = async () => {
       try {
         const res = await apiClient.get("/api/auth/check", {
           withCredentials: true,
@@ -57,12 +56,15 @@ const Sidebar = () => {
         setGroupCreated(false); // reset the flag
       }
     };
+  useEffect(() => {
 
     if (groupCreated) {
       fetchUserInfo();
     }
   }, [groupCreated]);
-
+  useEffect(()=>{
+    fetchUserInfo();
+  },[])
   useEffect(()=>{
     async function fetchSearch(){
       try {
@@ -96,7 +98,6 @@ const Sidebar = () => {
 const handleJoinGroup = async () => {
   if (!selectedGroup) return;
   try {
-   ;
 
     await apiClient.post(`/api/group/join/${selectedGroup._id}`, {
       joinToken: joinToken,
