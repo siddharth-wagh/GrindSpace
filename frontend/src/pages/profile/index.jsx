@@ -18,7 +18,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { userInfo, setUserInfo } = useAppStore();
-  const [profilePic, setProfilePic] = useState("");
+  const [profilePic, setProfilePic] = useState(null);
   const [about, setAbout] = useState("");
   const [originalImage, setOriginalImage] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
@@ -35,7 +35,7 @@ const Profile = () => {
           setAbout(response.data.about || "");
           setOriginalImage(response.data.image || "");
           setProfilePic(
-            response.data.image ? `${HOST}/${response.data.image}` : ""
+            response.data.image ? `${HOST}/${response.data.image}` : null
           );
         } else {
           navigate("/auth");
@@ -47,7 +47,7 @@ const Profile = () => {
     };
 
     fetchUserInfo();
-}, [profilepic]);
+}, [profilePic]);
 
   const handleImageChange = async (event) => {
     const file = event.target.files[0];

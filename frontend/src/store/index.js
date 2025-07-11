@@ -1,21 +1,37 @@
   import { create } from 'zustand';
 
+export const useAppStore = create((set, get) => ({
+  // User state
+  userInfo: null,
+  setUserInfo: (userInfo) => set({ userInfo }),
 
+  // Group state
+  currentGroup: null,
+  setCurrentGroup: (group) => set({ currentGroup: group }),
 
-  export const useAppStore = create((set,get) => ({
-      userInfo: null,
-    setUserInfo: (user) => { set({ userInfo: user }) },
+  // Messages state
+  messages: [],
+  setMessages: (messages) => set({ messages }),
+  addMessage: (message) => set((state) => ({ 
+    messages: [...state.messages, message] 
+  })),
 
-    messages:[],
-    setMessages:(msg)=>{
+  // UI state
+  isLoading: false,
+  setIsLoading: (isLoading) => set({ isLoading }),
+  
+  error: null,
+  setError: (error) => set({ error }),
 
-      set({messages:msg})
-    
-    },
-    currentGroup:null,
-    setCurrentGroup:(grp)=>{
-   
-      set({currentGroup:grp})
-      
-    }
-  }));
+  // Clear error
+  clearError: () => set({ error: null }),
+
+  // Reset store
+  reset: () => set({
+    userInfo: null,
+    currentGroup: null,
+    messages: [],
+    isLoading: false,
+    error: null
+  })
+}));
