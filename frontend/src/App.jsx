@@ -43,6 +43,7 @@ const setUserInfo = useAppStore((state) => state.setUserInfo);
   return (
     <div>
       <BrowserRouter>
+        
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route path="/home" element={<Homepage />} />

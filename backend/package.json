@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "npx nodemon index.js"
+    "dev": "npx nodemon index.js",
+    "start": "node index.js"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +21,7 @@
     "crypto": "^1.0.1",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "grindspace": "file:..",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.0",
     "multer": "^2.0.1",

@@ -1,13 +1,14 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { use, useEffect, useRef, useState } from "react";
 import { Users, Video, Phone, Send, Image, Mic, MicOff, VideoOff, X, PhoneOff } from "lucide-react";
 import { useAppStore } from "../store/index.js";
 import { apiClient } from "../lib/api-client.js";
 import { io } from "socket.io-client";
-
-const socket = io("http://localhost:8000", { withCredentials: true });
+import GroupDesc from "./GroupDesc.jsx";
+import { useLocation } from "react-router-dom";
+const socket = io( import.meta.env.MODE==="development"? "http://localhost:8000":"/", { withCredentials: true });
 
 const MainFrame = () => {
-  const { currentGroup, messages, setMessages, userInfo } = useAppStore();
+  const { currentGroup, messages, setMessages, userInfo ,groupUsers,setGroupUsers,showGroupDesc,setshowGroupDesc,addlistener} = useAppStore();
   const [tempmessages, setTempMessages] = useState([]);
   const [text, setText] = useState("");
   const [image, setImage] = useState(null);
@@ -21,6 +22,7 @@ const MainFrame = () => {
   const [isVideoOff, setIsVideoOff] = useState(false);
   const fileInputRef = useRef(null);
 
+    const location = useLocation();
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -80,7 +82,7 @@ const MainFrame = () => {
     return () => {
       socket.emit("leave-room", currentGroup._id);
     };
-  }, [currentGroup]);
+  }, [currentGroup,]);
 
   useEffect(() => {
     const handleNewMessage = async (messageData) => {
@@ -260,11 +262,48 @@ const MainFrame = () => {
     });
   };
 
+  useEffect(()=>{
+    const divHeader = document.getElementById("header");
+    if (divHeader) {
+    const handleClick = () => {
+      setshowGroupDesc(prev => !prev);
+      console.log("Header clicked, toggling group description visibility");
+    };
+      divHeader.addEventListener("click", handleClick);
+
+    return () => {
+      divHeader.removeEventListener("click", handleClick);
+    };
+  }}, [currentGroup,addlistener]);
+
+  useEffect(() => {
+    if(showGroupDesc){
+      const fetchGroupUsers = async () => {
+        try {
+          const res = await apiClient.get(`/api/group/getAllUsersInGroup/${currentGroup._id}`);
+          console.log("Fetched group users:", res.data.data);
+          setGroupUsers(res.data.data);
+          console.log("Fetched group users:", res.data.data);
+        } catch (error) {
+          console.error("Failed to fetch group users", error);
+        }
+      };
+      fetchGroupUsers();
+    }
+  },[showGroupDesc])
+  useEffect(() => {
+    setshowGroupDesc(false);
+  }, [location.pathname]); 
+  if(showGroupDesc){
+    return (
+      <GroupDesc />
+    )
+  }
+
   return (
     <div className="flex flex-col h-screen w-full bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Header */}
-     
-      <div className="p-4 bg-white shadow-lg border-b border-slate-200 flex justify-between items-center">
+   {/* header */}
+      <div className="p-4 bg-white shadow-lg border-b border-slate-200 flex justify-between items-center" id="header">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
             <Users className="w-5 h-5 text-white" />

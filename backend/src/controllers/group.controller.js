@@ -135,3 +135,52 @@ export const searchGroup=async(req,res)=>{
     res.status(500).json({ message: "Internal server error" });
   }
 }
+
+export const makeColeader = async(req,res)=>{
+  try {
+    const { userId } = req.body;
+    const groupId = req.params.groupId;
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+    if (!group.members.includes(userId)) {
+      return res.status(400).json({ message: "User is not a member of this group" });
+    }
+    if (group.leader.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Only the group leader can promote co-leaders" });
+    }
+    if (group.coLeaders.includes(userId)) {
+      return res.status(400).json({ message: "User is already a co-leader" });
+    }
+    group.coLeaders.push(userId);
+    await group.save();
+    return res.status(200).json({ message: "User promoted to co-leader successfully" });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message,
+      success: false,
+    });
+  }
+}
+
+export const getAllUsersInGroup = async (req, res) => {
+  try {
+    const groupId = req.params.groupId;
+    const group = await Group.findById(groupId).populate("members", "username profilePic");
+    
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+
+    return res.status(200).json({
+      data: group.members,
+      message: "Members fetched successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message,
+      success: false,
+    });
+  }
+}

@@ -4,7 +4,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { createServer } from "http";
 import { Server } from "socket.io";
-
+import path from "path";
 import { connectDB } from "./src/lib/mongoose.config.js";
 import MessageRoute from "./src/routes/message.routes.js";
 import authRoutes from "./src/routes/auth.routes.js";
@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 8000;
 
 const app = express();
 const httpServer = createServer(app);
-
+const __dirname = path.resolve(); 
 
 export const io = new Server(httpServer, {
   cors: {
@@ -108,6 +108,12 @@ app.use("/api/messages", MessageRoute);
 app.use("/api/auth", authRoutes);
 app.use("/api/group", groupRoutes);
 
+if(process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname,"../frontend/dist")));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
+  });
+}
 
 const startServer = () => {
   httpServer.listen(PORT, () => {

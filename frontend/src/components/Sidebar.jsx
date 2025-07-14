@@ -9,7 +9,9 @@ const Sidebar = () => {
     setUserInfo, 
     currentGroup, 
     setCurrentGroup, 
-    setMessages 
+    setMessages ,
+    
+    setshowGroupDesc,
   } = useAppStore();
 
   const [groupCreated, setGroupCreated] = useState(false);
@@ -31,6 +33,7 @@ const Sidebar = () => {
 
   function openGroup(group) {
     setCurrentGroup(group);
+    setshowGroupDesc(false)
     setMessages([]);
     console.log("Opening group:", group.name);
   }

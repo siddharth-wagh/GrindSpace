@@ -23,7 +23,7 @@ const Profile = () => {
   const [originalImage, setOriginalImage] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
+  //todo -> profilePic not visible in profile
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {

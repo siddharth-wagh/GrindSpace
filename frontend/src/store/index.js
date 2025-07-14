@@ -34,4 +34,13 @@ export const useAppStore = create((set, get) => ({
     isLoading: false,
     error: null
   })
+
+  //users in current group
+  , groupUsers: [],
+  setGroupUsers: (users) => set({ groupUsers: users }),
+
+  showGroupDesc:false,
+  setshowGroupDesc: (show) => set({ showGroupDesc: show }),
+  addlistener : false,
+  setAddListener: (listener) => set({ addlistener: listener })
 }));
