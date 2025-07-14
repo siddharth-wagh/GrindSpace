@@ -5,7 +5,7 @@ import { apiClient } from "../lib/api-client.js";
 import { io } from "socket.io-client";
 import GroupDesc from "./GroupDesc.jsx";
 import { useLocation } from "react-router-dom";
-const socket = io( import.meta.env.MODE==="development"? "http://localhost:8000":"/", { withCredentials: true });
+const socket = io( import.meta.env.MODE==="development"? "http://localhost:8000":"https://grindspace.onrender.com/", { withCredentials: true });
 
 const MainFrame = () => {
   const { currentGroup, messages, setMessages, userInfo ,groupUsers,setGroupUsers,showGroupDesc,setshowGroupDesc,addlistener} = useAppStore();

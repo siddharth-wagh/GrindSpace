@@ -1,4 +1,4 @@
-export const HOST = import.meta.env.MODE==="development"? import.meta.env.VITE_SERVER_URL:"/";
+export const HOST = import.meta.env.MODE==="development"? import.meta.env.VITE_SERVER_URL:"https://grindspace.onrender.com/";
 
 
 export const AUTH_ROUTES =`${HOST}/api/auth`;
