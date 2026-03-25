@@ -17,32 +17,50 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       minlength: 6,
-      index: true,
     },
     profilePic: {
       type: String,
-      default: "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+      default: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
     },
     about: {
       type: String,
-      default:""
-      
+      default: "",
     },
     status: {
       type: String,
-      enum: ["online", "offline", "studying"],
+      enum: ["online", "offline", "idle", "dnd"],
       default: "offline",
     },
     profileSetup: {
       type: Boolean,
       default: false,
     },
-    groups: [
+    servers: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Group",
+        ref: "Server",
       },
     ],
+    friends: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    friendRequests: {
+      incoming: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+      ],
+      outgoing: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+      ],
+    },
   },
   { timestamps: true }
 );

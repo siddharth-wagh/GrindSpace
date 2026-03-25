@@ -1,6 +1,6 @@
 import axios from "axios";
 
 export const apiClient = axios.create({
-    baseURL: "http://localhost:8000", // <-- Updated to match backend port
-    withCredentials: true,
+  baseURL:"http://localhost:8000", // Replace with your IP
+  withCredentials: true,              // Important: keeps cookies in request
 });

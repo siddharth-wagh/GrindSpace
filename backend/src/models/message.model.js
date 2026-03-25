@@ -1,26 +1,64 @@
 import mongoose from 'mongoose';
 
+const reactionSchema = new mongoose.Schema(
+  {
+    emoji: {
+      type: String,
+      required: true,
+    },
+    users: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+  },
+  { _id: false }
+);
+
 const messageSchema = new mongoose.Schema({
-  group: {
+  // For server channel messages
+  channel: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Group',
-    required: true,
-    index:true
+    ref: 'Channel',
+    default: null,
+  },
+  server: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Server',
+    default: null,
+  },
+  // For DM messages
+  conversation: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Conversation',
+    default: null,
   },
   sender: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: true,
   },
   text: {
-    type: String // for text messages
+    type: String,
   },
   image: {
-    type: String // for image URL if message has an image
+    type: String,
   },
-},{timestamps:true});
+  replyTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Message',
+    default: null,
+  },
+  edited: {
+    type: Boolean,
+    default: false,
+  },
+  reactions: [reactionSchema],
+}, { timestamps: true });
 
-messageSchema.index({ group: 1, createdAt: -1 });//indexing for latest msg sorting and kepping same group msg together
+messageSchema.index({ channel: 1, createdAt: -1 });
+messageSchema.index({ conversation: 1, createdAt: -1 });
 
 const Message = mongoose.model('Message', messageSchema);
 export default Message;

@@ -74,7 +74,7 @@ export const login = async (req, res) => {
 export const checkauth = async (req, res) => {
     try {
       const userId = req.user._id;
-      const user = await User.findById(userId).populate("groups");
+      const user = await User.findById(userId).populate("servers");
         res.status(200).json(user);
         console.log("postman ")
     }

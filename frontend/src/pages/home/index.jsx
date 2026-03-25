@@ -1,60 +1,114 @@
-import React from "react";
-import { MessageCircle } from "lucide-react";
-import { useAppStore } from "../../store/index.js";
-import Sidebar from "../../components/Sidebar.jsx";
-import MainFrame from "../../components/MainFrame.jsx";
+import { useEffect, useRef } from "react";
+import { io } from "socket.io-client";
+import { useAppStore } from "@/store";
+import { apiClient } from "@/lib/api-client";
+import { GET_MY_SERVERS, HOST } from "@/utils/constants";
+import ServerSidebar from "@/components/server/ServerSidebar";
+import ChannelSidebar from "@/components/server/ChannelSidebar";
+import MemberSidebar from "@/components/server/MemberSidebar";
+import DMSidebar from "@/components/dm/DMSidebar";
+import ChatArea from "@/components/chat/ChatArea";
+import FriendsPanel from "@/components/friends/FriendsPanel";
 
+export default function Homepage() {
+  const {
+    userInfo,
+    setServers,
+    activeView,
+    currentServer,
+    currentConversation,
+    setOnlineUsers,
+    addOnlineUser,
+    removeOnlineUser,
+  } = useAppStore();
 
+  const socketRef = useRef(null);
 
+  // Initialize socket
+  useEffect(() => {
+    if (!userInfo?._id) return;
 
-const Homepage = () => {
-  const {currentGroup, setCurrentGroup} = useAppStore();
+    const socket = io(HOST || "http://localhost:8000", {
+      withCredentials: true,
+    });
+    socketRef.current = socket;
 
-   React.useEffect(() => {
-    document.body.style.margin = '0';
-    document.body.style.padding = '0';
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.margin = '0';
-    document.documentElement.style.padding = '0';
-    document.documentElement.style.overflow = 'hidden';
-    
+    socket.on("connect", () => {
+      socket.emit("user-online", userInfo._id);
+    });
+
+    socket.on("user-status-change", ({ userId, status }) => {
+      if (status === "online") addOnlineUser(userId);
+      else removeOnlineUser(userId);
+    });
+
     return () => {
-      document.body.style.margin = '';
-      document.body.style.padding = '';
-      document.body.style.overflow = '';
-      document.documentElement.style.margin = '';
-      document.documentElement.style.padding = '';
-      document.documentElement.style.overflow = '';
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [userInfo?._id]);
+
+  // Fetch servers on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await apiClient.get(GET_MY_SERVERS);
+        setServers(res.data.data);
+      } catch (err) {
+        console.error("Failed to fetch servers:", err);
+      }
+    })();
+  }, []);
+
+  // Join server rooms when servers change
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket) return;
+    const { servers } = useAppStore.getState();
+    servers.forEach((s) => socket.emit("join-server", s._id));
+  }, [useAppStore((s) => s.servers)]);
+
+  // Lock body scroll
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
     };
   }, []);
+
+  const socket = socketRef.current;
+  const showFriendsPanel = activeView === "dm" && !currentConversation;
+
   return (
-    <div className="h-screen w-screen flex overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
-      {/* Sidebar placeholder */}
-      <div className="w-80 bg-slate-800">
-        <div className="p-4 text-white"> <Sidebar/> </div>
-      </div>
-      
-      {currentGroup ? (
-        <div className="flex-1 bg-slate-700">
-          <div className="p-4 text-white"><MainFrame/></div>
-        </div>
+    <div
+      className="h-screen w-screen flex overflow-hidden"
+      style={{ position: "fixed", inset: 0, background: "var(--bg-deepest)" }}
+    >
+      {/* Far left: server icons */}
+      <ServerSidebar />
+
+      {/* Second column: channel list or DM list */}
+      {activeView === "server" && currentServer ? (
+        <ChannelSidebar socket={socket} />
+      ) : activeView === "dm" ? (
+        <DMSidebar socket={socket} />
       ) : (
-        <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-          <div className="text-center">
-            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center">
-              <MessageCircle className="w-10 h-10 text-white" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              Welcome to ChatHub
-            </h2>
-            <p className="text-gray-600 max-w-md">
-              Select a group from the sidebar to start chatting or create a new group to begin your conversation.
-            </p>
-          </div>
+        <div className="w-60 min-w-[240px] bg-[var(--bg-dark)] border-r border-[var(--border)] flex items-center justify-center">
+          <p className="text-sm text-[var(--text-muted)]">Select a server</p>
         </div>
       )}
+
+      {/* Main area: chat or friends panel */}
+      {showFriendsPanel ? (
+        <FriendsPanel socket={socket} />
+      ) : (
+        <ChatArea socket={socket} />
+      )}
+
+      {/* Right panel: member list (server view only) */}
+      {activeView === "server" && currentServer && <MemberSidebar />}
     </div>
   );
-};
-
-export default Homepage;
+}

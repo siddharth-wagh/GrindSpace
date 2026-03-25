@@ -1,53 +1,62 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const groupSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  description: {
-    type: String
-  },
+const groupSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    description: {
+      type: String,
+    },
 
-  isPrivate: {
-    type: Boolean,
-    default: false
+    isPrivate: {
+      type: Boolean,
+      default: false,
+    },
+    leader: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    coLeaders: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    members: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    tags: {
+      type: [String],
+      default: [],
+      validate: [arrayLimit, "You can add up to 5 tags only"],
+    },
+    jitsiRoomName: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    joinToken: {
+      type: String,
+      select: false,
+    },
+    profilePicGrp: {
+      type: String,
+      default: "https://img.freepik.com/free-vector/user-group-with-shadow_78370-7019.jpg?semt=ais_hybrid&w=740",
+    },
   },
-  leader: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  coLeaders: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
-  members: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
-  tags: {
-    type: [String],
-    default: [],
-    validate: [arrayLimit, 'You can add up to 5 tags only']
-  },
-  jitsiRoomName: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  joinToken: {
-    type: String,
-    select: false
-  }
-
- 
-},{timstamps:true});
+  { timestamps: true }
+);
 
 function arrayLimit(val) {
   return val.length <= 5; // Limit to 5 tags
 }
 
-const Group = mongoose.model('Group', groupSchema);
+const Group = mongoose.model("Group", groupSchema);
 export default Group;
