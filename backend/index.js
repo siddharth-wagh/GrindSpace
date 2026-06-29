@@ -12,6 +12,17 @@ import channelRoutes from "./src/routes/channel.routes.js";
 import messageRoutes from "./src/routes/message.routes.js";
 import dmRoutes from "./src/routes/dm.routes.js";
 import friendRoutes from "./src/routes/friend.routes.js";
+import codeforcesRoutes from "./src/routes/codeforces.routes.js";
+import ledgerRoutes from "./src/routes/ledger.routes.js";
+import oracleRoutes from "./src/routes/oracle.routes.js";
+import problemRoutes from "./src/routes/problem.routes.js";
+import leaderboardRoutes from "./src/routes/leaderboard.routes.js";
+import cpRoutes from "./src/routes/cp.routes.js";
+import contestRoutes from "./src/routes/contest.routes.js";
+import { startCfPoller } from "./src/lib/cfPoller.js";
+import { startCronJobs } from "./src/lib/cron.js";
+import { createAdapter } from "@socket.io/redis-adapter";
+import IORedis from "ioredis";
 import User from "./src/models/user.model.js";
 
 dotenv.config();
@@ -30,6 +41,18 @@ export const io = new Server(httpServer, {
 // ─── Shared State ────────────────────────────────────────────────────────────
 export const userSocketMap = {}; // { socketId: userId }
 const voiceChannelMembers = {}; // { channelId: Set<socketId> }
+export const contestRoomMembers = {}; // { channelId: Set<userId> }
+
+if (process.env.REDIS_URL) {
+  try {
+    const pubClient = new IORedis(process.env.REDIS_URL);
+    const subClient = pubClient.duplicate();
+    io.adapter(createAdapter(pubClient, subClient));
+    console.log("Socket.IO using Redis adapter");
+  } catch (err) {
+    console.log("redis adapter failed", err.message);
+  }
+}
 
 // ─── Socket.io ───────────────────────────────────────────────────────────────
 io.on("connection", (socket) => {
@@ -48,10 +71,23 @@ io.on("connection", (socket) => {
   // ── Channel Rooms (text channels in servers) ──────────────────────────────
   socket.on("join-channel", (channelId) => {
     socket.join(`channel:${channelId}`);
+    const userId = userSocketMap[socket.id];
+    if (userId) {
+      if (!contestRoomMembers[channelId]) contestRoomMembers[channelId] = new Set();
+      contestRoomMembers[channelId].add(userId);
+    }
   });
 
   socket.on("leave-channel", (channelId) => {
     socket.leave(`channel:${channelId}`);
+    const userId = userSocketMap[socket.id];
+    if (userId && contestRoomMembers[channelId]) {
+      contestRoomMembers[channelId].delete(userId);
+    }
+  });
+
+  socket.on("set-active-problem", ({ channelId, problem }) => {
+    socket.to(`channel:${channelId}`).emit("warroom-active-problem", { channelId, problem });
   });
 
   // ── Server Room (for server-wide events) ──────────────────────────────────
@@ -171,6 +207,11 @@ io.on("connection", (socket) => {
         await User.findByIdAndUpdate(userId, { status: "offline" });
       } catch (_) {}
       io.emit("user-status-change", { userId, status: "offline" });
+
+      for (const channelId in contestRoomMembers) {
+        contestRoomMembers[channelId]?.delete(userId);
+      }
+
       delete userSocketMap[socket.id];
     }
 
@@ -217,6 +258,13 @@ app.use("/api/servers/:serverId/channels", channelRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/dm", dmRoutes);
 app.use("/api/friends", friendRoutes);
+app.use("/api/codeforces", codeforcesRoutes);
+app.use("/api/ledger", ledgerRoutes);
+app.use("/api/oracle", oracleRoutes);
+app.use("/api/problems", problemRoutes);
+app.use("/api/leaderboard", leaderboardRoutes);
+app.use("/api/cp", cpRoutes);
+app.use("/api/contests", contestRoutes);
 
 // ─── Start ───────────────────────────────────────────────────────────────────
 const startServer = () => {
@@ -224,6 +272,8 @@ const startServer = () => {
     console.log(`Server started on http://localhost:${PORT}`);
   });
   connectDB();
+  startCfPoller();
+  startCronJobs();
 };
 
 startServer();

@@ -5,10 +5,11 @@ import { apiClient } from "@/lib/api-client";
 import { GET_MY_SERVERS, HOST } from "@/utils/constants";
 import ServerSidebar from "@/components/server/ServerSidebar";
 import ChannelSidebar from "@/components/server/ChannelSidebar";
-import MemberSidebar from "@/components/server/MemberSidebar";
+import RightPanel from "@/components/server/RightPanel";
 import DMSidebar from "@/components/dm/DMSidebar";
 import ChatArea from "@/components/chat/ChatArea";
 import FriendsPanel from "@/components/friends/FriendsPanel";
+import CommandPalette from "@/components/CommandPalette";
 
 export default function Homepage() {
   const {
@@ -107,8 +108,10 @@ export default function Homepage() {
         <ChatArea socket={socket} />
       )}
 
-      {/* Right panel: member list (server view only) */}
-      {activeView === "server" && currentServer && <MemberSidebar />}
+      {/* Right panel: members + problem ledger (server view only) */}
+      {activeView === "server" && currentServer && <RightPanel />}
+
+      <CommandPalette />
     </div>
   );
 }

@@ -3,6 +3,11 @@ import { useAppStore } from "@/store";
 import { apiClient } from "@/lib/api-client";
 import { MESSAGE_ROUTES, DM_ROUTES } from "@/utils/constants";
 import EmojiPicker from "emoji-picker-react";
+import confetti from "canvas-confetti";
+import MessageContent from "./MessageContent";
+import WarRoomDashboard from "./WarRoomDashboard";
+import OraclePanel from "./OraclePanel";
+import StartContestButton from "../contest/StartContestButton";
 import {
   Send,
   ImagePlus,
@@ -15,6 +20,7 @@ import {
   Trash2,
   CornerUpRight,
   ChevronUp,
+  Trophy,
 } from "lucide-react";
 
 export default function ChatArea({ socket }) {
@@ -32,6 +38,12 @@ export default function ChatArea({ socket }) {
     setShowMemberSidebar,
     replyingTo,
     setReplyingTo,
+    addRecentAC,
+    setWarRoomActiveProblem,
+    setWarRoomMemberStatus,
+    setActiveContest,
+    bumpLedgerTick,
+    openOracle,
   } = useAppStore();
 
   const [text, setText] = useState("");
@@ -105,6 +117,40 @@ export default function ChatArea({ socket }) {
     const handleStopTyping = ({ userId }) => {
       setTypingUsers((prev) => prev.filter((u) => u.userId !== userId));
     };
+    const handleLedger = () => bumpLedgerTick();
+    const handleAC = (data) => {
+      setWarRoomMemberStatus(data.userId, {
+        verdict: data.accepted ? "accepted" : data.verdict,
+        at: Date.now(),
+      });
+      if (!data.accepted) return;
+      addRecentAC(data);
+      setWarRoomActiveProblem({
+        name: data.problemName,
+        index: data.problemIndex,
+        contestId: data.contestId,
+        rating: data.rating,
+      });
+      const solvedLine =
+        data.username +
+        " solved " +
+        (data.problemIndex ? data.problemIndex + " — " : "") +
+        data.problemName +
+        (data.timeMs ? " in " + data.timeMs + "ms" : "") +
+        (data.lang ? " (" + data.lang + ")" : "") +
+        "!";
+      addMessage({
+        _id: "ac-" + data.userId + "-" + Date.now(),
+        system: true,
+        text: solvedLine,
+        createdAt: new Date().toISOString(),
+      });
+      confetti({ particleCount: 90, spread: 70, origin: { y: 0.3 } });
+      scrollToBottom();
+    };
+    const handleActiveProblem = ({ problem }) => setWarRoomActiveProblem(problem);
+    const handleContestStarted = ({ contest }) => setActiveContest(contest);
+    const handleContestEnded = () => setActiveContest(null);
 
     const msgEvent = isDM ? "dm-message" : "new-message";
     socket.on(msgEvent, handleNewMessage);
@@ -113,6 +159,8 @@ export default function ChatArea({ socket }) {
     socket.on("message-reaction-update", handleReaction);
     socket.on("user-typing", handleTyping);
     socket.on("user-stopped-typing", handleStopTyping);
+    socket.on("ledger-updated", handleLedger);
+    socket.on("ac-verdict", handleAC);
 
     return () => {
       socket.off(msgEvent, handleNewMessage);
@@ -121,6 +169,8 @@ export default function ChatArea({ socket }) {
       socket.off("message-reaction-update", handleReaction);
       socket.off("user-typing", handleTyping);
       socket.off("user-stopped-typing", handleStopTyping);
+      socket.off("ledger-updated", handleLedger);
+      socket.off("ac-verdict", handleAC);
     };
   }, [socket, targetId]);
 
@@ -233,6 +283,7 @@ export default function ChatArea({ socket }) {
           </>
         )}
         <div className="flex-1" />
+        {isChannel && <StartContestButton channelId={currentChannel._id} />}
         {isChannel && (
           <button
             onClick={() => setShowMemberSidebar(!showMemberSidebar)}
@@ -244,6 +295,13 @@ export default function ChatArea({ socket }) {
           </button>
         )}
       </div>
+
+      {/* War Room Dashboard */}
+      {isChannel && (
+        <div id="warroom">
+          <WarRoomDashboard socket={socket} />
+        </div>
+      )}
 
       {/* Messages */}
       <div
@@ -261,6 +319,10 @@ export default function ChatArea({ socket }) {
         )}
 
         {messages.map((msg, i) => {
+          if (msg.system) {
+            return <SystemMessage key={msg._id} msg={msg} />;
+          }
+
           const showHeader =
             i === 0 ||
             messages[i - 1].sender?._id !== msg.sender?._id ||
@@ -282,6 +344,7 @@ export default function ChatArea({ socket }) {
               }}
               onDelete={() => handleDelete(msg._id)}
               onReaction={(emoji) => handleReaction(msg._id, emoji)}
+              onAskOracle={openOracle}
               editing={editingMessage === msg._id}
               editText={editText}
               setEditText={setEditText}
@@ -391,6 +454,18 @@ export default function ChatArea({ socket }) {
           </button>
         </div>
       </form>
+
+      <OraclePanel />
+    </div>
+  );
+}
+
+// ─── System Message (live AC celebration) ────────────────────────────────────
+function SystemMessage({ msg }) {
+  return (
+    <div className="flex items-center gap-2 px-3 py-1.5 my-1 mx-2 rounded-md bg-emerald-500/10 border border-emerald-500/30">
+      <Trophy size={14} className="text-yellow-400 shrink-0" />
+      <span className="text-xs text-emerald-300">{msg.text}</span>
     </div>
   );
 }
@@ -407,6 +482,7 @@ function MessageBubble({
   onEdit,
   onDelete,
   onReaction,
+  onAskOracle,
   editing,
   editText,
   setEditText,
@@ -486,12 +562,11 @@ function MessageBubble({
           ) : (
             <>
               {msg.text && (
-                <p className="text-sm break-words">
-                  {msg.text}
-                  {msg.edited && (
-                    <span className="text-[10px] text-[var(--text-muted)] ml-1">(edited)</span>
-                  )}
-                </p>
+                <MessageContent
+                  text={msg.text}
+                  edited={msg.edited}
+                  problemMetadata={msg.problemMetadata}
+                />
               )}
               {msg.image && (
                 <img

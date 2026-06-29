@@ -1,6 +1,7 @@
 import Auth from "./pages/auth";
 import Homepage from "./pages/home";
 import Profile from "./pages/profile";
+import CpDashboard from "./pages/dashboard";
 import { useAppStore } from "./store";
 import { useState, useEffect } from "react";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
@@ -90,6 +91,22 @@ function App() {
           element={
             <PrivateRoute>
               <Profile />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <CpDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/dashboard/:userId"
+          element={
+            <PrivateRoute>
+              <CpDashboard />
             </PrivateRoute>
           }
         />

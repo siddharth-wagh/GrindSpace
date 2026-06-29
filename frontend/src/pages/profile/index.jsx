@@ -6,12 +6,15 @@ import { GET_USER_INFO, UPDATE_PROFILE_ROUTE } from "../../utils/constants";
 import { useAppStore } from "@/store/index.js";
 import { apiClient } from "@/lib/api-client.js";
 import { toast } from "sonner";
+import RankBadge from "@/components/cp/RankBadge";
+import { BarChart3 } from "lucide-react";
 
 const Profile = () => {
   const navigate = useNavigate();
   const { userInfo, setUserInfo } = useAppStore();
   const [profilePic, setProfilePic] = useState(null);
   const [about, setAbout] = useState("");
+  const [handle, setHandle] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -22,6 +25,7 @@ const Profile = () => {
         if (response.status === 200 && response.data) {
           setUserInfo(response.data);
           setAbout(response.data.about || "");
+          setHandle(response.data.codeforcesHandle || "");
           setProfilePic(response.data.profilePic || null);
         } else {
           navigate("/auth");
@@ -68,6 +72,7 @@ const Profile = () => {
     try {
       const formData = new FormData();
       formData.append("about", about);
+      formData.append("codeforcesHandle", handle.trim());
       if (!profilePic) formData.append("removeImage", "true");
 
       const response = await apiClient.put(UPDATE_PROFILE_ROUTE, formData, {
@@ -76,7 +81,7 @@ const Profile = () => {
       });
 
       if (response.status === 200) {
-        setUserInfo((prev) => ({ ...prev, about }));
+        setUserInfo((prev) => ({ ...prev, about, codeforcesHandle: handle.trim() }));
         setHasChanges(false);
         toast.success("Profile saved!");
       }
@@ -202,6 +207,43 @@ const Profile = () => {
                 onFocus={(e) => (e.target.style.borderColor = "rgba(124,58,237,0.5)")}
                 onBlur={(e) => (e.target.style.borderColor = "rgba(124,58,237,0.18)")}
               />
+            </div>
+
+            {/* Codeforces Handle */}
+            <div className="mb-7">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
+                Codeforces Handle
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. tourist"
+                value={handle}
+                onChange={(e) => {
+                  setHandle(e.target.value);
+                  setHasChanges(true);
+                }}
+                className="w-full px-4 py-3 rounded-xl text-sm text-slate-200 placeholder-slate-600 outline-none font-mono transition-all"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(124,58,237,0.18)",
+                }}
+                onFocus={(e) => (e.target.style.borderColor = "rgba(124,58,237,0.5)")}
+                onBlur={(e) => (e.target.style.borderColor = "rgba(124,58,237,0.18)")}
+              />
+              <p className="text-[11px] text-slate-600 mt-1.5">
+                Link your handle to track live AC verdicts in Contest Rooms.
+              </p>
+              {userInfo?.codeforcesHandle && (
+                <div className="mt-3 flex items-center justify-between rounded-xl px-4 py-3" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(124,58,237,0.12)" }}>
+                  <RankBadge rating={userInfo.cfRating} handle={userInfo.codeforcesHandle} />
+                  <button
+                    onClick={() => navigate("/dashboard")}
+                    className="flex items-center gap-1.5 text-xs font-semibold text-violet-300 hover:text-pink-300 transition-colors"
+                  >
+                    <BarChart3 className="w-4 h-4" /> CP Dashboard
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Save */}
