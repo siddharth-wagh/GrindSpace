@@ -70,17 +70,17 @@ export default function ServerSidebar() {
       <div className="w-8 h-[2px] bg-[var(--border)] rounded-full" />
 
       {/* Add Server */}
-      <SidebarIcon onClick={() => setShowCreate(true)} tooltip="Create Server" color="green">
+      <SidebarIcon onClick={() => setShowCreate(true)} tooltip="Create Squad" color="green">
         <Plus size={24} />
       </SidebarIcon>
 
       {/* Join by Invite */}
-      <SidebarIcon onClick={() => setShowJoin(true)} tooltip="Join Server" color="green">
+      <SidebarIcon onClick={() => setShowJoin(true)} tooltip="Join Squad" color="green">
         <Search size={20} />
       </SidebarIcon>
 
       {/* Discover */}
-      <SidebarIcon onClick={() => setShowDiscover(true)} tooltip="Discover Servers" color="green">
+      <SidebarIcon onClick={() => setShowDiscover(true)} tooltip="Discover Squads" color="green">
         <Globe size={20} />
       </SidebarIcon>
 
@@ -183,18 +183,18 @@ function CreateServerModal({ onClose, onCreated }) {
     <ModalOverlay onClose={onClose}>
       <div className="bg-[var(--bg-card)] rounded-xl p-6 w-[440px] max-w-[90vw] border border-[var(--border)]">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Create a Server</h2>
+          <h2 className="text-xl font-bold">Create a Squad</h2>
           <button onClick={onClose}><X size={20} className="text-[var(--text-muted)]" /></button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-semibold uppercase text-[var(--text-muted)]">Server Name</span>
+            <span className="text-xs font-semibold uppercase text-[var(--text-muted)]">Squad Name</span>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="bg-[var(--bg-deepest)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--violet)]"
-              placeholder="My Awesome Server"
+              placeholder="My ICPC Squad"
               required
             />
           </label>
@@ -217,7 +217,7 @@ function CreateServerModal({ onClose, onCreated }) {
               className="accent-[var(--violet)]"
             />
             <Lock size={14} className="text-[var(--text-muted)]" />
-            <span className="text-sm">Private Server (invite only)</span>
+            <span className="text-sm">Private Squad (invite only)</span>
           </label>
 
           <label className="flex flex-col gap-1">
@@ -244,7 +244,7 @@ function CreateServerModal({ onClose, onCreated }) {
             disabled={loading || !name.trim()}
             className="bg-[var(--violet)] hover:bg-[var(--violet-lite)] text-white font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-50"
           >
-            {loading ? "Creating..." : "Create Server"}
+            {loading ? "Creating..." : "Create Squad"}
           </button>
         </form>
       </div>
@@ -277,7 +277,7 @@ function JoinServerModal({ onClose, onJoined }) {
     <ModalOverlay onClose={onClose}>
       <div className="bg-[var(--bg-card)] rounded-xl p-6 w-[440px] max-w-[90vw] border border-[var(--border)]">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Join a Server</h2>
+          <h2 className="text-xl font-bold">Join a Squad</h2>
           <button onClick={onClose}><X size={20} className="text-[var(--text-muted)]" /></button>
         </div>
 
@@ -300,7 +300,7 @@ function JoinServerModal({ onClose, onJoined }) {
             disabled={loading}
             className="bg-[var(--violet)] hover:bg-[var(--violet-lite)] text-white font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-50"
           >
-            {loading ? "Joining..." : "Join Server"}
+            {loading ? "Joining..." : "Join Squad"}
           </button>
         </form>
       </div>
@@ -352,7 +352,7 @@ function DiscoverModal({ onClose, onJoined }) {
     <ModalOverlay onClose={onClose}>
       <div className="bg-[var(--bg-card)] rounded-xl p-6 w-[540px] max-w-[90vw] max-h-[80vh] flex flex-col border border-[var(--border)]">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Discover Servers</h2>
+          <h2 className="text-xl font-bold">Discover Squads</h2>
           <button onClick={onClose}><X size={20} className="text-[var(--text-muted)]" /></button>
         </div>
 
@@ -360,7 +360,7 @@ function DiscoverModal({ onClose, onJoined }) {
           value={query}
           onChange={(e) => handleSearch(e.target.value)}
           className="bg-[var(--bg-deepest)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:border-[var(--violet)]"
-          placeholder="Search public servers..."
+          placeholder="Search public squads..."
         />
 
         <div className="flex-1 overflow-y-auto space-y-2">
@@ -390,7 +390,7 @@ function DiscoverModal({ onClose, onJoined }) {
             </div>
           ))}
           {results.length === 0 && !loading && (
-            <p className="text-center text-[var(--text-muted)] text-sm py-8">No servers found</p>
+            <p className="text-center text-[var(--text-muted)] text-sm py-8">No squads found</p>
           )}
         </div>
       </div>

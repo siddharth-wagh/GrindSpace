@@ -295,7 +295,7 @@ export const getServerMembers = async (req, res) => {
 
     const server = await Server.findById(serverId).populate(
       "members.user",
-      "username profilePic status"
+      "username profilePic status codeforcesHandle cfRating cfMaxRating cfRank"
     );
     if (!server) return res.status(404).json({ message: "Server not found" });
 
