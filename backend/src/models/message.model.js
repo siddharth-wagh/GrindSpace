@@ -55,6 +55,18 @@ const messageSchema = new mongoose.Schema({
     default: false,
   },
   reactions: [reactionSchema],
+  problemMetadata: {
+    type: {
+      contestId: Number,
+      index: String,
+      name: String,
+      rating: Number,
+      tags: [String],
+      solvedCount: Number,
+      url: String,
+    },
+    default: null,
+  },
 }, { timestamps: true });
 
 messageSchema.index({ channel: 1, createdAt: -1 });

@@ -17,6 +17,7 @@ import {
   MicOff,
   Headphones,
   VolumeX,
+  ListChecks,
 } from "lucide-react";
 
 export default function ChannelSidebar({ socket }) {
@@ -37,6 +38,8 @@ export default function ChannelSidebar({ socket }) {
     isDeafened,
     setIsDeafened,
     voiceParticipants,
+    setShowMemberSidebar,
+    setRightPanelTab,
   } = useAppStore();
 
   const [collapsedCategories, setCollapsedCategories] = useState({});
@@ -157,12 +160,22 @@ export default function ChannelSidebar({ socket }) {
             >
               <Copy size={14} /> Invite People
             </button>
+            <button
+              onClick={() => {
+                setShowMemberSidebar(true);
+                setRightPanelTab("problems");
+                setShowServerSettings(false);
+              }}
+              className="w-full px-3 py-1.5 text-sm text-left hover:bg-[var(--bg-surface)] flex items-center gap-2"
+            >
+              <ListChecks size={14} /> Problem Ledger
+            </button>
             {isAdmin && (
               <button
                 onClick={() => { setShowCreateChannel(true); setShowServerSettings(false); }}
                 className="w-full px-3 py-1.5 text-sm text-left hover:bg-[var(--bg-surface)] flex items-center gap-2"
               >
-                <Plus size={14} /> Create Channel
+                <Plus size={14} /> Create Room
               </button>
             )}
             {!isOwner && (
@@ -227,7 +240,7 @@ export default function ChannelSidebar({ socket }) {
       {currentVoiceChannel && (
         <div className="border-t border-[var(--border)] px-2 py-2 bg-[var(--bg-card)]">
           <div className="text-xs text-emerald-400 font-medium mb-1 flex items-center gap-1">
-            <Volume2 size={12} /> Voice Connected
+            <Volume2 size={12} /> Pair Debug Live
           </div>
           <p className="text-xs text-[var(--text-muted)] truncate mb-2">
             {currentVoiceChannel.name}
@@ -380,7 +393,7 @@ function CreateChannelModal({ serverId, categories, onClose, onCreated }) {
     >
       <div className="bg-[var(--bg-card)] rounded-xl p-6 w-[400px] max-w-[90vw] border border-[var(--border)]">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold">Create Channel</h2>
+          <h2 className="text-lg font-bold">Create Contest Room</h2>
           <button onClick={onClose}><X size={20} className="text-[var(--text-muted)]" /></button>
         </div>
 
@@ -395,7 +408,7 @@ function CreateChannelModal({ serverId, categories, onClose, onCreated }) {
                   : "bg-[var(--bg-surface)] text-[var(--text-muted)]"
               }`}
             >
-              <Hash size={16} /> Text
+              <Hash size={16} /> Contest Room
             </button>
             <button
               type="button"
@@ -406,7 +419,7 @@ function CreateChannelModal({ serverId, categories, onClose, onCreated }) {
                   : "bg-[var(--bg-surface)] text-[var(--text-muted)]"
               }`}
             >
-              <Volume2 size={16} /> Voice
+              <Volume2 size={16} /> Pair Debug
             </button>
           </div>
 
@@ -439,7 +452,7 @@ function CreateChannelModal({ serverId, categories, onClose, onCreated }) {
             disabled={loading || !name.trim()}
             className="bg-[var(--violet)] hover:bg-[var(--violet-lite)] text-white font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-50"
           >
-            {loading ? "Creating..." : "Create Channel"}
+            {loading ? "Creating..." : "Create Room"}
           </button>
         </form>
       </div>

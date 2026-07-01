@@ -26,3 +26,53 @@ export const DM_ROUTES = `${HOST}/api/dm`;
 
 // Friends
 export const FRIEND_ROUTES = `${HOST}/api/friends`;
+
+// Codeforces problem metadata
+export const CF_ROUTES = `${HOST}/api/codeforces`;
+export const getProblemMetaRoute = (contestId, index) =>
+  `${CF_ROUTES}/problem/${contestId}/${index}`;
+
+// Problems (unfurl + solve marks)
+export const PROBLEM_ROUTES = `${HOST}/api/problems`;
+export const UNFURL_ROUTE = `${PROBLEM_ROUTES}/unfurl`;
+export const MARK_SOLVED_ROUTE = `${PROBLEM_ROUTES}/solve`;
+export const MY_SOLVES_ROUTE = `${PROBLEM_ROUTES}/mine`;
+
+// Problem Ledger (derived)
+export const LEDGER_ROUTES = `${HOST}/api/ledger`;
+export const getLedgerRoute = (channelId) => `${LEDGER_ROUTES}/channel/${channelId}`;
+export const getSquadLedgerRoute = (serverId) => `${LEDGER_ROUTES}/squad/${serverId}`;
+
+// Leaderboard
+export const getLeaderboardRoute = (serverId) =>
+  `${HOST}/api/leaderboard/squad/${serverId}`;
+
+// CP analytics
+export const getHeatmapRoute = (userId) => `${HOST}/api/cp/heatmap/${userId}`;
+export const getCpDashboardRoute = (userId) => `${HOST}/api/cp/dashboard/${userId}`;
+export const getStreakRoute = (userId) => `${HOST}/api/cp/streak/${userId}`;
+
+// Virtual contests
+export const CONTEST_ROUTES = `${HOST}/api/contests`;
+export const CREATE_CONTEST_ROUTE = `${CONTEST_ROUTES}/create`;
+export const IMPORT_CF_CONTEST_ROUTE = `${CONTEST_ROUTES}/import-cf`;
+export const RANDOM_PROBLEMS_ROUTE = `${CONTEST_ROUTES}/random-problems`;
+export const getChannelContestRoute = (channelId) =>
+  `${CONTEST_ROUTES}/channel/${channelId}/active`;
+export const getContestScoreboardRoute = (contestId) =>
+  `${CONTEST_ROUTES}/${contestId}/scoreboard`;
+export const getEndContestRoute = (contestId) => `${CONTEST_ROUTES}/${contestId}/end`;
+export const getUpsolveRoute = (contestId) => `${CONTEST_ROUTES}/${contestId}/upsolve`;
+
+// Oracle (AI)
+export const ORACLE_ROUTES = `${HOST}/api/oracle`;
+export const ORACLE_QUERY = `${ORACLE_ROUTES}/query`;
+
+// CP rebrand labels
+export const LABELS = {
+  server: "Squad",
+  servers: "Squads",
+  channel: "Contest Room",
+  channels: "Contest Rooms",
+  voiceChannel: "Pair Debugging Line",
+};

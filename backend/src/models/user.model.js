@@ -61,6 +61,31 @@ const userSchema = new mongoose.Schema(
         },
       ],
     },
+    codeforcesHandle: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    cfLastSubmissionId: {
+      type: Number,
+      default: 0,
+    },
+    cfRating: {
+      type: Number,
+      default: 0,
+    },
+    cfMaxRating: {
+      type: Number,
+      default: 0,
+    },
+    cfRank: {
+      type: String,
+      default: "",
+    },
+    cfLastSyncedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

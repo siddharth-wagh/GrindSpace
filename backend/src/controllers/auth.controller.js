@@ -2,6 +2,7 @@ import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import { generateToken } from "../lib/util.js";
 import cloudinary from "../lib/cloudinary.js";
+import { getUserInfo } from "../lib/codeforces.js";
 
 export const signup = async (req, res) => {
   const { email, password, username } = req.body;
@@ -101,10 +102,32 @@ export const logout = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { about } = req.body;
+    const { about, codeforcesHandle } = req.body;
     const DEFAULT_PFP = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
     const updateFields = {};
+
+    if (codeforcesHandle !== undefined) {
+      const trimmedHandle = codeforcesHandle.trim();
+      if (trimmedHandle === "") {
+        updateFields.codeforcesHandle = "";
+        updateFields.cfRating = 0;
+        updateFields.cfMaxRating = 0;
+        updateFields.cfRank = "";
+        updateFields.cfLastSyncedAt = null;
+      } else {
+        const info = await getUserInfo(trimmedHandle);
+        if (!info) {
+          return res.status(400).json({ message: "Invalid Codeforces handle" });
+        }
+        updateFields.codeforcesHandle = info.handle;
+        updateFields.cfRating = info.rating;
+        updateFields.cfMaxRating = info.maxRating;
+        updateFields.cfRank = info.rank;
+        updateFields.cfLastSyncedAt = new Date();
+        updateFields.profileSetup = true;
+      }
+    }
 
     // Handle image upload via multer memory storage + cloudinary
     if (req.file) {

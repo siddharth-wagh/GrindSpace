@@ -3,6 +3,7 @@ import Channel from "../models/channel.model.js";
 import Server from "../models/server.model.js";
 import cloudinary from "../lib/cloudinary.js";
 import { io } from "../../index.js";
+import { attachProblemMetadata } from "./ledger.controller.js";
 
 // ─── POST /api/messages/:channelId ──────────────────────────────────────────
 export const createMessage = async (req, res) => {
@@ -53,6 +54,10 @@ export const createMessage = async (req, res) => {
     }
 
     io.to(`channel:${channel._id}`).emit("new-message", message);
+
+    if (text) {
+      attachProblemMetadata(message, text, `channel:${channel._id}`);
+    }
 
     return res.status(201).json({ data: message, message: "Success" });
   } catch (error) {

@@ -1,194 +1,133 @@
-# GrindSpace
+# GrindSpace CP War Room
 
-GrindSpace is a full-stack real-time community chat platform built around servers, channels, direct messages, and friend management. It combines authenticated social features with Socket.IO-powered live updates so users can chat, manage communities, and stay online in real time.
+A competitive-programming "war room" where coding squads grind Codeforces together. Drop a problem link in chat and it unfurls into rich metadata, mark solves that sync automatically from your Codeforces account, run timed contests with a live scoreboard, climb squad leaderboards, and ask the built-in Gemini "Oracle" to explain any snippet — all wrapped in a dense, dark hacker aesthetic.
 
-## What It Does
+## Features
 
-- User authentication with signup, login, logout, and session validation.
-- Profile setup and editing, including avatar upload and bio/about text.
-- Server creation, discovery, search, joining, leaving, invites, and member management.
-- Channel-based messaging inside servers, with support for creating, editing, deleting, reordering, and reacting to messages.
-- Direct messages and group DMs, plus conversation history.
-- Friend requests, friend lists, request handling, and user search.
-- Realtime presence updates with online/offline status.
-- Typing indicators, room joins/leaves, and realtime message delivery.
-- Voice-channel and WebRTC signaling support for call-style interactions.
+- **Discord-style squads & channels** — create servers ("squads"), invite members, and chat in text channels.
+- **Problem unfurling** — paste any Codeforces problem link and it expands inline with name, rating, tags, solved count, and a direct link.
+- **Solve ledger** — mark problems solved manually or let the Codeforces sync pull your recent accepted submissions automatically.
+- **Codeforces sync** — link your CF handle to pull rating, max rating, rank, and your latest submissions on a cron schedule.
+- **Live contests** — spin up a timed contest from a set of problems (or import a real CF round), watch a real-time scoreboard via Socket.IO, then end and upsolve.
+- **Squad leaderboards** — per-server rankings by solves and rating, with rank-colored handles.
+- **Activity heatmap & streaks** — GitHub-style solve heatmap and streak tracking per user.
+- **The Oracle** — a Gemini-powered assistant that explains code and problems on demand.
+- **Command palette** — fast keyboard-driven navigation across squads, channels, and problems.
 
-## Tech Stack
+## Architecture
 
-### Frontend
-
-- React 19
-- Vite
-- React Router
-- Zustand for state management
-- Tailwind CSS
-- Radix UI primitives and Radix Themes
-- Framer Motion
-- Socket.IO client
-- Axios
-- Sonner for toasts
-- Lucide React icons
-- Emoji Picker React
-
-### Backend
-
-- Node.js
-- Express 5
-- MongoDB with Mongoose
-- Socket.IO
-- JWT authentication
-- bcrypt / bcryptjs for password hashing
-- Multer for file uploads
-- Cloudinary for media storage
-- CORS and cookie-parser for secure cross-origin auth flows
-- Cron and crypto utilities
-
-## Core Features
-
-### Authentication and Profiles
-
-- Register and sign in with email, username, and password.
-- Check auth status on app load and route users accordingly.
-- Update profile picture and about section.
-- Store auth state in the frontend store and protect private routes.
-
-### Servers and Communities
-
-- Create custom servers with an uploaded icon.
-- Discover and search public servers.
-- Join, leave, and browse your own servers.
-- Invite other users through generated invite codes.
-- Manage server members, including role changes and kicks.
-
-### Channels and Messaging
-
-- Create, rename, delete, and reorder channels inside a server.
-- Send channel messages with optional image uploads.
-- Edit, delete, and react to messages.
-- Load message history for channels and DMs.
-
-### Direct Messages and Groups
-
-- Start direct message conversations.
-- Create and use group DMs.
-- Browse existing DM conversations.
-- Send image-based DM messages.
-
-### Friends and Presence
-
-- Send, accept, decline, and remove friend requests.
-- Search for users.
-- Track online/offline status in real time.
-- Show typing activity in conversations and channels.
-
-### Realtime and Voice Support
-
-- Socket.IO is used for presence, room membership, typing, and message delivery.
-- Voice channel membership is tracked on the server.
-- WebRTC signaling events are available for peer-to-peer audio/video style interactions.
-- DM call lifecycle events are supported for ringing, acceptance, decline, and end states.
-
-## Project Structure
-
-```text
-GrindSpace/
-	backend/
-		index.js
-		src/
-			controllers/
-			lib/
-			middlewares/
-			models/
-			routes/
-	frontend/
-		src/
-			components/
-			hooks/
-			lib/
-			pages/
-			store/
-			utils/
+```
+                    +-----------------------------+
+                    |        Clients (Browser)    |
+                    |   Vite + React 19 + Tailwind|
+                    |   lucide-react, SyntaxHL     |
+                    +--------------+--------------+
+                                   |
+                       HTTPS / WebSocket (axios + socket.io-client)
+                                   |
+                    +--------------v--------------+
+                    |   Express 5 + Socket.IO      |
+                    |   REST API + realtime events |
+                    |   JWT auth (httpOnly cookie)  |
+                    +---+--------+--------+--------+
+                        |        |        |
+            +-----------+        |        +------------------+
+            |                    |                           |
+   +--------v--------+  +--------v--------+        +---------v---------+
+   | MongoDB Atlas   |  | Redis / Upstash |        |  Codeforces API   |
+   | users, servers, |  | KV store, links,|        |  problems, subs,  |
+   | channels, msgs, |  | dedupe, counters|        |  ratings, stand.  |
+   | solves, contests|  +-----------------+        +-------------------+
+   +-----------------+
+                        +------------------+
+                        |   Gemini API     |
+                        |   (the Oracle)   |
+                        +------------------+
 ```
 
-## Setup
+The React SPA talks to the Express + Socket.IO backend over REST (axios, `withCredentials`) and a WebSocket. The backend persists domain data in MongoDB Atlas, uses Redis/Upstash as a KV store for link parsing, dedupe and counters, calls the Codeforces public API for problem and submission data, and calls the Gemini API to power the Oracle. Cloudinary stores uploaded profile pictures.
 
-### Prerequisites
+## Environment variables
 
-- Node.js 18+ recommended
-- MongoDB database
-- Cloudinary account for image uploads
+### Backend (`backend/`)
 
-### Backend
+| Variable | Description |
+| --- | --- |
+| `MONGO_URI` | MongoDB Atlas connection string. |
+| `JWT_SECRET` | Secret used to sign auth JWTs. |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name for image uploads. |
+| `CLOUDINARY_API_KEY` | Cloudinary API key. |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret. |
+| `GEMINI_API_KEY` | Google Gemini API key for the Oracle. |
+| `FRONTEND_URL` | Allowed origin for CORS and Socket.IO (the deployed frontend URL). |
+| `REDIS_URL` | Redis / Upstash connection URL for the KV store. |
+| `PORT` | Port the server listens on (defaults to 5001). |
 
-1. Open the `backend` folder.
-2. Install dependencies with `npm install`.
-3. Create a `.env` file with the required values.
-4. Start the server with `npm run dev`.
+### Frontend (`frontend/`)
 
-Example backend environment variables:
+| Variable | Description |
+| --- | --- |
+| `VITE_API_HOST` | Base URL of the backend API (e.g. `https://grindspace-backend.onrender.com`). |
 
-```env
-PORT=8000
-FRONTEND_URL=http://localhost:5173
-MONGODB_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret
-CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
-CLOUDINARY_API_KEY=your_cloudinary_api_key
-CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+## Local development
+
+You need Node 18+, a MongoDB instance (local or Atlas), and a Redis instance (local or Upstash).
+
+### 1. Backend
+
+```bash
+cd backend
+npm install
+# create backend/.env with the variables from the table above
+npm run dev
 ```
 
-### Frontend
+### 2. Frontend
 
-1. Open the `frontend` folder.
-2. Install dependencies with `npm install`.
-3. Create a `.env` file if you want to override the API host.
-4. Start the app with `npm run dev`.
-
-Example frontend environment variables:
-
-```env
-VITE_SERVER_URL=http://localhost:8000
+```bash
+cd frontend
+npm install
+# create frontend/.env with VITE_API_HOST pointing at the backend
+npm run dev
 ```
 
-## Available Scripts
+The Vite dev server prints a local URL (typically `http://localhost:5173`). Open it in your browser.
 
-### Backend
+### 3. Seed demo data (optional)
 
-- `npm run dev` starts the Express server with Nodemon.
+With `MONGO_URI` set in `backend/.env`, populate the database with demo squads, users, and an ended contest:
 
-### Frontend
+```bash
+cd backend
+node scripts/seed.js
+```
 
-- `npm run dev` starts the Vite development server.
-- `npm run build` creates a production build.
-- `npm run lint` runs ESLint.
-- `npm run preview` serves the production build locally.
+This creates ~10 demo users (real CF handles such as `tourist`, `jiangly`, `Benq`) with the password `password123`, three squads, and one finished demo contest. The script is idempotent-ish: it skips any user, server, or contest that already exists.
 
-## API Overview
+## Deployment
 
-The backend exposes the following route groups:
+### Backend on Render
 
-- `/api/auth` for signup, login, auth checks, profile updates, and logout.
-- `/api/servers` for server lifecycle, discovery, membership, and invites.
-- `/api/servers/:serverId/channels` for channel management.
-- `/api/messages` for channel message operations and reactions.
-- `/api/dm` for direct and group conversations.
-- `/api/friends` for social graph and friend requests.
+1. Push the repo to GitHub.
+2. In Render, create a new **Blueprint** and point it at the repo; it will pick up `backend/render.yaml`.
+3. Render runs `npm install` and starts the service with `node index.js` from the `backend/` root.
+4. Fill in the secret env vars (`MONGO_URI`, `JWT_SECRET`, `CLOUDINARY_*`, `GEMINI_API_KEY`, `FRONTEND_URL`, `REDIS_URL`) in the Render dashboard.
 
-## Realtime Events
+### Frontend on Vercel
 
-Socket.IO is used for:
+1. Import the repo in Vercel and set the **Root Directory** to `frontend/`.
+2. `frontend/vercel.json` configures the Vite framework preset and rewrites all routes to `/index.html` for SPA routing.
+3. Set `VITE_API_HOST` to your Render backend URL in the Vercel project settings.
 
-- user-online and user-status-change
-- join-server and leave-server
-- join-channel and leave-channel
-- join-conversation and leave-conversation
-- typing-start and typing-stop
-- voice room membership and WebRTC signaling
-- DM call ring, accept, decline, and end events
+### MongoDB Atlas
 
-## Notes
+1. Create a free cluster in MongoDB Atlas.
+2. Add a database user and allow network access from Render (or `0.0.0.0/0` for a quick demo).
+3. Copy the connection string into `MONGO_URI`.
 
-- The app uses cookie-based auth on the frontend and backend.
-- Uploaded images are handled through Multer on the server and stored in Cloudinary.
-- The UI is built as a fixed, full-screen chat layout with separate panels for servers, channels, conversations, chat content, and members.
+### Upstash Redis
+
+1. Create a Redis database in Upstash.
+2. Copy the connection URL into `REDIS_URL` on Render (and locally in `backend/.env`).
+
+Once both services are live, point `FRONTEND_URL` (backend) at the Vercel URL and `VITE_API_HOST` (frontend) at the Render URL, then redeploy.
