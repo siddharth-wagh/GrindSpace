@@ -4,19 +4,13 @@ import { apiClient } from "@/lib/api-client";
 import { getChannelsRoute, SERVER_ROUTES } from "@/utils/constants";
 import {
   Hash,
-  Volume2,
   ChevronDown,
   ChevronRight,
   Plus,
-  Settings,
   LogOut,
   Trash2,
   X,
   Copy,
-  Mic,
-  MicOff,
-  Headphones,
-  VolumeX,
   ListChecks,
 } from "lucide-react";
 
@@ -31,13 +25,6 @@ export default function ChannelSidebar({ socket }) {
     setCurrentServer,
     setServers,
     servers,
-    currentVoiceChannel,
-    setCurrentVoiceChannel,
-    isMuted,
-    setIsMuted,
-    isDeafened,
-    setIsDeafened,
-    voiceParticipants,
     setShowMemberSidebar,
     setRightPanelTab,
   } = useAppStore();
@@ -81,21 +68,6 @@ export default function ChannelSidebar({ socket }) {
     }
   };
 
-  const handleJoinVoice = (channel) => {
-    if (currentVoiceChannel) {
-      socket?.emit("leave-voice", currentVoiceChannel._id);
-    }
-    setCurrentVoiceChannel(channel);
-    socket?.emit("join-voice", channel._id);
-  };
-
-  const handleLeaveVoice = () => {
-    if (currentVoiceChannel) {
-      socket?.emit("leave-voice", currentVoiceChannel._id);
-    }
-    setCurrentVoiceChannel(null);
-  };
-
   const handleLeaveServer = async () => {
     if (!currentServer) return;
     try {
@@ -128,6 +100,7 @@ export default function ChannelSidebar({ socket }) {
   // Group channels by category
   const categories = {};
   channels.forEach((ch) => {
+    if (ch.type && ch.type !== "text") return;
     const cat = ch.category || "Uncategorized";
     if (!categories[cat]) categories[cat] = [];
     categories[cat].push(ch);
@@ -136,7 +109,6 @@ export default function ChannelSidebar({ socket }) {
   const myRole = currentServer.members?.find(
     (m) => (m.user?._id || m.user) === userInfo?._id
   )?.role;
-  const isAdmin = ["owner", "admin"].includes(myRole);
   const isOwner = myRole === "owner";
 
   return (
@@ -170,7 +142,7 @@ export default function ChannelSidebar({ socket }) {
             >
               <ListChecks size={14} /> Problem Ledger
             </button>
-            {isAdmin && (
+            {isOwner && (
               <button
                 onClick={() => { setShowCreateChannel(true); setShowServerSettings(false); }}
                 className="w-full px-3 py-1.5 text-sm text-left hover:bg-[var(--bg-surface)] flex items-center gap-2"
@@ -219,72 +191,13 @@ export default function ChannelSidebar({ socket }) {
                 <ChannelItem
                   key={channel._id}
                   channel={channel}
-                  active={
-                    channel.type === "text"
-                      ? currentChannel?._id === channel._id
-                      : currentVoiceChannel?._id === channel._id
-                  }
-                  onClick={() =>
-                    channel.type === "text"
-                      ? handleSelectTextChannel(channel)
-                      : handleJoinVoice(channel)
-                  }
-                  voiceParticipants={voiceParticipants[channel._id]}
+                  active={currentChannel?._id === channel._id}
+                  onClick={() => handleSelectTextChannel(channel)}
                 />
               ))}
           </div>
         ))}
       </div>
-
-      {/* Voice Controls (shown when in voice channel) */}
-      {currentVoiceChannel && (
-        <div className="border-t border-[var(--border)] px-2 py-2 bg-[var(--bg-card)]">
-          <div className="text-xs text-emerald-400 font-medium mb-1 flex items-center gap-1">
-            <Volume2 size={12} /> Pair Debug Live
-          </div>
-          <p className="text-xs text-[var(--text-muted)] truncate mb-2">
-            {currentVoiceChannel.name}
-          </p>
-          <div className="flex gap-1">
-            <button
-              onClick={() => {
-                setIsMuted(!isMuted);
-                socket?.emit("voice-state-update", {
-                  channelId: currentVoiceChannel._id,
-                  muted: !isMuted,
-                  deafened: isDeafened,
-                });
-              }}
-              className={`flex-1 p-1.5 rounded flex items-center justify-center ${
-                isMuted ? "bg-red-500/20 text-red-400" : "bg-[var(--bg-surface)] text-[var(--text-muted)] hover:text-white"
-              }`}
-            >
-              {isMuted ? <MicOff size={16} /> : <Mic size={16} />}
-            </button>
-            <button
-              onClick={() => {
-                setIsDeafened(!isDeafened);
-                socket?.emit("voice-state-update", {
-                  channelId: currentVoiceChannel._id,
-                  muted: isMuted,
-                  deafened: !isDeafened,
-                });
-              }}
-              className={`flex-1 p-1.5 rounded flex items-center justify-center ${
-                isDeafened ? "bg-red-500/20 text-red-400" : "bg-[var(--bg-surface)] text-[var(--text-muted)] hover:text-white"
-              }`}
-            >
-              {isDeafened ? <VolumeX size={16} /> : <Headphones size={16} />}
-            </button>
-            <button
-              onClick={handleLeaveVoice}
-              className="flex-1 p-1.5 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 flex items-center justify-center"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* User Bar */}
       <div className="border-t border-[var(--border)] px-2 py-2 flex items-center gap-2 bg-[var(--bg-deepest)]">
@@ -326,45 +239,26 @@ export default function ChannelSidebar({ socket }) {
 }
 
 // ─── Channel Item ────────────────────────────────────────────────────────────
-function ChannelItem({ channel, active, onClick, voiceParticipants }) {
+function ChannelItem({ channel, active, onClick }) {
   return (
-    <div>
-      <button
-        onClick={onClick}
-        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors
-          ${
-            active
-              ? "bg-[var(--bg-surface)] text-white"
-              : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface)]/50"
-          }`}
-      >
-        {channel.type === "text" ? (
-          <Hash size={16} className="shrink-0 opacity-60" />
-        ) : (
-          <Volume2 size={16} className="shrink-0 opacity-60" />
-        )}
-        <span className="truncate">{channel.name}</span>
-      </button>
-
-      {/* Voice channel participants */}
-      {channel.type === "voice" && voiceParticipants?.length > 0 && (
-        <div className="ml-8 space-y-0.5 py-0.5">
-          {voiceParticipants.map((p) => (
-            <div key={p.socketId} className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
-              <div className="w-4 h-4 rounded-full bg-[var(--bg-surface)]" />
-              <span className="truncate">{p.username || "User"}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors
+        ${
+          active
+            ? "bg-[var(--bg-surface)] text-white"
+            : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface)]/50"
+        }`}
+    >
+      <Hash size={16} className="shrink-0 opacity-60" />
+      <span className="truncate">{channel.name}</span>
+    </button>
   );
 }
 
 // ─── Create Channel Modal ────────────────────────────────────────────────────
 function CreateChannelModal({ serverId, categories, onClose, onCreated }) {
   const [name, setName] = useState("");
-  const [type, setType] = useState("text");
   const [category, setCategory] = useState(categories[0] || "");
   const [loading, setLoading] = useState(false);
 
@@ -375,7 +269,7 @@ function CreateChannelModal({ serverId, categories, onClose, onCreated }) {
     try {
       const res = await apiClient.post(getChannelsRoute(serverId), {
         name: name.trim(),
-        type,
+        type: "text",
         category,
       });
       onCreated(res.data.data);
@@ -398,38 +292,13 @@ function CreateChannelModal({ serverId, categories, onClose, onCreated }) {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setType("text")}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 ${
-                type === "text"
-                  ? "bg-[var(--violet)] text-white"
-                  : "bg-[var(--bg-surface)] text-[var(--text-muted)]"
-              }`}
-            >
-              <Hash size={16} /> Contest Room
-            </button>
-            <button
-              type="button"
-              onClick={() => setType("voice")}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 ${
-                type === "voice"
-                  ? "bg-[var(--violet)] text-white"
-                  : "bg-[var(--bg-surface)] text-[var(--text-muted)]"
-              }`}
-            >
-              <Volume2 size={16} /> Pair Debug
-            </button>
-          </div>
-
           <label className="flex flex-col gap-1">
             <span className="text-xs font-semibold uppercase text-[var(--text-muted)]">Channel Name</span>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="bg-[var(--bg-deepest)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--violet)]"
-              placeholder={type === "text" ? "new-channel" : "General Voice"}
+              placeholder="new-channel"
               required
             />
           </label>

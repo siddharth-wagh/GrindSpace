@@ -1,33 +1,15 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAppStore } from "@/store";
 import { apiClient } from "@/lib/api-client";
-import { MESSAGE_ROUTES, DM_ROUTES } from "@/utils/constants";
-import EmojiPicker from "emoji-picker-react";
+import { MESSAGE_ROUTES } from "@/utils/constants";
 import confetti from "canvas-confetti";
 import MessageContent from "./MessageContent";
-import WarRoomDashboard from "./WarRoomDashboard";
-import OraclePanel from "./OraclePanel";
 import StartContestButton from "../contest/StartContestButton";
-import {
-  Send,
-  ImagePlus,
-  X,
-  Hash,
-  Users,
-  Smile,
-  Reply,
-  Pencil,
-  Trash2,
-  CornerUpRight,
-  ChevronUp,
-  Trophy,
-} from "lucide-react";
+import { Send, Hash, Users, Pencil, Trash2, ChevronUp, Trophy } from "lucide-react";
 
 export default function ChatArea({ socket }) {
   const {
     currentChannel,
-    currentConversation,
-    activeView,
     messages,
     setMessages,
     addMessage,
@@ -36,20 +18,11 @@ export default function ChatArea({ socket }) {
     userInfo,
     showMemberSidebar,
     setShowMemberSidebar,
-    replyingTo,
-    setReplyingTo,
-    addRecentAC,
-    setWarRoomActiveProblem,
-    setWarRoomMemberStatus,
     setActiveContest,
     bumpLedgerTick,
-    openOracle,
   } = useAppStore();
 
   const [text, setText] = useState("");
-  const [image, setImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-  const [showEmoji, setShowEmoji] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [typingUsers, setTypingUsers] = useState([]);
@@ -60,32 +33,22 @@ export default function ChatArea({ socket }) {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
-  const fileInputRef = useRef(null);
 
-  const isChannel = activeView === "server" && currentChannel;
-  const isDM = activeView === "dm" && currentConversation;
-  const targetId = isChannel ? currentChannel._id : currentConversation?._id;
+  const channelId = currentChannel ? currentChannel._id : null;
 
-  // Ensure socket is joined to the right room
   useEffect(() => {
-    if (!socket || !targetId) return;
-    if (isChannel) socket.emit("join-channel", targetId);
-    else if (isDM) socket.emit("join-conversation", targetId);
+    if (!socket || !channelId) return;
+    socket.emit("join-channel", channelId);
     return () => {
-      if (isChannel) socket.emit("leave-channel", targetId);
-      else if (isDM) socket.emit("leave-conversation", targetId);
+      socket.emit("leave-channel", channelId);
     };
-  }, [socket, targetId]);
+  }, [socket, channelId]);
 
-  // Fetch messages
   useEffect(() => {
-    if (!targetId) return;
+    if (!channelId) return;
     (async () => {
       try {
-        const url = isChannel
-          ? `${MESSAGE_ROUTES}/channel/${targetId}`
-          : `${DM_ROUTES}/${targetId}/messages`;
-        const res = await apiClient.get(url);
+        const res = await apiClient.get(`${MESSAGE_ROUTES}/channel/${channelId}`);
         setMessages(res.data.data);
         setHasMore(res.data.hasMore);
         scrollToBottom();
@@ -93,11 +56,10 @@ export default function ChatArea({ socket }) {
         console.error("Failed to fetch messages:", err);
       }
     })();
-  }, [targetId]);
+  }, [channelId]);
 
-  // Socket listeners
   useEffect(() => {
-    if (!socket || !targetId) return;
+    if (!socket || !channelId) return;
 
     const handleNewMessage = (msg) => {
       addMessage(msg);
@@ -106,8 +68,6 @@ export default function ChatArea({ socket }) {
     const handleDeleted = (msgId) => removeMessage(msgId);
     const handleEdited = ({ messageId, text, edited }) =>
       updateMessage(messageId, { text, edited });
-    const handleReaction = ({ messageId, reactions }) =>
-      updateMessage(messageId, { reactions });
     const handleTyping = ({ userId, username }) => {
       if (userId === userInfo?._id) return;
       setTypingUsers((prev) =>
@@ -119,18 +79,7 @@ export default function ChatArea({ socket }) {
     };
     const handleLedger = () => bumpLedgerTick();
     const handleAC = (data) => {
-      setWarRoomMemberStatus(data.userId, {
-        verdict: data.accepted ? "accepted" : data.verdict,
-        at: Date.now(),
-      });
       if (!data.accepted) return;
-      addRecentAC(data);
-      setWarRoomActiveProblem({
-        name: data.problemName,
-        index: data.problemIndex,
-        contestId: data.contestId,
-        rating: data.rating,
-      });
       const solvedLine =
         data.username +
         " solved " +
@@ -148,31 +97,31 @@ export default function ChatArea({ socket }) {
       confetti({ particleCount: 90, spread: 70, origin: { y: 0.3 } });
       scrollToBottom();
     };
-    const handleActiveProblem = ({ problem }) => setWarRoomActiveProblem(problem);
     const handleContestStarted = ({ contest }) => setActiveContest(contest);
     const handleContestEnded = () => setActiveContest(null);
 
-    const msgEvent = isDM ? "dm-message" : "new-message";
-    socket.on(msgEvent, handleNewMessage);
+    socket.on("new-message", handleNewMessage);
     socket.on("message-deleted", handleDeleted);
     socket.on("message-edited", handleEdited);
-    socket.on("message-reaction-update", handleReaction);
     socket.on("user-typing", handleTyping);
     socket.on("user-stopped-typing", handleStopTyping);
     socket.on("ledger-updated", handleLedger);
     socket.on("ac-verdict", handleAC);
+    socket.on("contest-started", handleContestStarted);
+    socket.on("contest-ended", handleContestEnded);
 
     return () => {
-      socket.off(msgEvent, handleNewMessage);
+      socket.off("new-message", handleNewMessage);
       socket.off("message-deleted", handleDeleted);
       socket.off("message-edited", handleEdited);
-      socket.off("message-reaction-update", handleReaction);
       socket.off("user-typing", handleTyping);
       socket.off("user-stopped-typing", handleStopTyping);
       socket.off("ledger-updated", handleLedger);
       socket.off("ac-verdict", handleAC);
+      socket.off("contest-started", handleContestStarted);
+      socket.off("contest-ended", handleContestEnded);
     };
-  }, [socket, targetId]);
+  }, [socket, channelId]);
 
   const scrollToBottom = () => {
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
@@ -183,10 +132,9 @@ export default function ChatArea({ socket }) {
     setLoadingOlder(true);
     const oldest = messages[0]._id;
     try {
-      const url = isChannel
-        ? `${MESSAGE_ROUTES}/channel/${targetId}?before=${oldest}`
-        : `${DM_ROUTES}/${targetId}/messages?before=${oldest}`;
-      const res = await apiClient.get(url);
+      const res = await apiClient.get(
+        `${MESSAGE_ROUTES}/channel/${channelId}?before=${oldest}`
+      );
       setMessages([...res.data.data, ...messages]);
       setHasMore(res.data.hasMore);
     } catch (_) {}
@@ -194,35 +142,25 @@ export default function ChatArea({ socket }) {
   };
 
   const handleTypingEmit = () => {
-    const payload = isChannel
-      ? { channelId: targetId, userId: userInfo._id, username: userInfo.username }
-      : { conversationId: targetId, userId: userInfo._id, username: userInfo.username };
-    socket?.emit("typing-start", payload);
+    socket?.emit("typing-start", {
+      channelId: channelId,
+      userId: userInfo._id,
+      username: userInfo.username,
+    });
     clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
-      socket?.emit("typing-stop", isChannel ? { channelId: targetId, userId: userInfo._id } : { conversationId: targetId, userId: userInfo._id });
+      socket?.emit("typing-stop", { channelId: channelId, userId: userInfo._id });
     }, 2000);
   };
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!text.trim() && !image) return;
-
+    if (!text.trim()) return;
     try {
-      const formData = new FormData();
-      if (text.trim()) formData.append("text", text.trim());
-      if (image) formData.append("image", image);
-      if (replyingTo) formData.append("replyTo", replyingTo._id);
-
-      const url = isChannel
-        ? `${MESSAGE_ROUTES}/channel/${targetId}`
-        : `${DM_ROUTES}/${targetId}/messages`;
-      await apiClient.post(url, formData);
-
+      await apiClient.post(`${MESSAGE_ROUTES}/channel/${channelId}`, {
+        text: text.trim(),
+      });
       setText("");
-      setImage(null);
-      setImagePreview(null);
-      setReplyingTo(null);
     } catch (err) {
       console.error("Failed to send message:", err);
     }
@@ -243,21 +181,7 @@ export default function ChatArea({ socket }) {
     } catch (_) {}
   };
 
-  const handleReaction = async (messageId, emoji) => {
-    try {
-      await apiClient.post(`${MESSAGE_ROUTES}/${messageId}/reactions`, { emoji });
-    } catch (_) {}
-  };
-
-  const handleImageSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImage(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
-  };
-
-  if (!targetId) {
+  if (!channelId) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[var(--bg-dark)]">
         <div className="text-center">
@@ -268,42 +192,29 @@ export default function ChatArea({ socket }) {
     );
   }
 
-  const channelName = isChannel ? currentChannel.name : currentConversation?.name || "Direct Message";
-
   return (
     <div className="flex-1 flex flex-col bg-[var(--bg-dark)] min-w-0">
-      {/* Header */}
       <div className="h-12 min-h-[48px] flex items-center px-4 border-b border-[var(--border)] gap-2">
-        {isChannel && <Hash size={20} className="text-[var(--text-muted)] shrink-0" />}
-        <span className="font-semibold text-sm">{channelName}</span>
-        {isChannel && currentChannel.topic && (
+        <Hash size={20} className="text-[var(--text-muted)] shrink-0" />
+        <span className="font-semibold text-sm">{currentChannel.name}</span>
+        {currentChannel.topic && (
           <>
             <div className="w-px h-5 bg-[var(--border)] mx-2" />
             <span className="text-xs text-[var(--text-muted)] truncate">{currentChannel.topic}</span>
           </>
         )}
         <div className="flex-1" />
-        {isChannel && <StartContestButton channelId={currentChannel._id} />}
-        {isChannel && (
-          <button
-            onClick={() => setShowMemberSidebar(!showMemberSidebar)}
-            className={`p-1.5 rounded hover:bg-[var(--bg-surface)] transition-colors ${
-              showMemberSidebar ? "text-white" : "text-[var(--text-muted)]"
-            }`}
-          >
-            <Users size={20} />
-          </button>
-        )}
+        <StartContestButton channelId={currentChannel._id} />
+        <button
+          onClick={() => setShowMemberSidebar(!showMemberSidebar)}
+          className={`p-1.5 rounded hover:bg-[var(--bg-surface)] transition-colors ${
+            showMemberSidebar ? "text-white" : "text-[var(--text-muted)]"
+          }`}
+        >
+          <Users size={20} />
+        </button>
       </div>
 
-      {/* War Room Dashboard */}
-      {isChannel && (
-        <div id="warroom">
-          <WarRoomDashboard socket={socket} />
-        </div>
-      )}
-
-      {/* Messages */}
       <div
         ref={messagesContainerRef}
         className="flex-1 overflow-y-auto px-4 py-2 space-y-0.5 scrollbar-thin"
@@ -326,6 +237,7 @@ export default function ChatArea({ socket }) {
           const showHeader =
             i === 0 ||
             messages[i - 1].sender?._id !== msg.sender?._id ||
+            messages[i - 1].system ||
             new Date(msg.createdAt) - new Date(messages[i - 1].createdAt) > 5 * 60 * 1000;
 
           return (
@@ -337,27 +249,25 @@ export default function ChatArea({ socket }) {
               hovered={hoveredMessage === msg._id}
               onHover={() => setHoveredMessage(msg._id)}
               onLeave={() => setHoveredMessage(null)}
-              onReply={() => setReplyingTo(msg)}
               onEdit={() => {
                 setEditingMessage(msg._id);
                 setEditText(msg.text || "");
               }}
               onDelete={() => handleDelete(msg._id)}
-              onReaction={(emoji) => handleReaction(msg._id, emoji)}
-              onAskOracle={openOracle}
               editing={editingMessage === msg._id}
               editText={editText}
               setEditText={setEditText}
               onEditSubmit={() => handleEdit(msg._id)}
-              onEditCancel={() => { setEditingMessage(null); setEditText(""); }}
-              userId={userInfo?._id}
+              onEditCancel={() => {
+                setEditingMessage(null);
+                setEditText("");
+              }}
             />
           );
         })}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Typing Indicator */}
       {typingUsers.length > 0 && (
         <div className="px-4 py-1 text-xs text-[var(--text-muted)]">
           <span className="font-medium">{typingUsers.map((u) => u.username).join(", ")}</span>{" "}
@@ -365,112 +275,39 @@ export default function ChatArea({ socket }) {
         </div>
       )}
 
-      {/* Reply Preview */}
-      {replyingTo && (
-        <div className="px-4 py-2 bg-[var(--bg-surface)] border-t border-[var(--border)] flex items-center gap-2">
-          <Reply size={14} className="text-[var(--violet-lite)] shrink-0" />
-          <span className="text-xs text-[var(--text-muted)]">
-            Replying to <span className="font-medium text-[var(--text-primary)]">{replyingTo.sender?.username}</span>
-          </span>
-          <span className="text-xs text-[var(--text-muted)] truncate flex-1">{replyingTo.text}</span>
-          <button onClick={() => setReplyingTo(null)}>
-            <X size={14} className="text-[var(--text-muted)]" />
-          </button>
-        </div>
-      )}
-
-      {/* Image Preview */}
-      {imagePreview && (
-        <div className="px-4 py-2 bg-[var(--bg-surface)] border-t border-[var(--border)]">
-          <div className="relative inline-block">
-            <img src={imagePreview} className="h-20 rounded-lg" />
-            <button
-              onClick={() => { setImage(null); setImagePreview(null); }}
-              className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
-            >
-              <X size={12} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Input */}
       <form onSubmit={handleSend} className="px-4 pb-4 pt-1">
         <div className="flex items-center gap-2 bg-[var(--bg-surface)] rounded-lg px-3 py-2 border border-[var(--border)] focus-within:border-[var(--violet)]">
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-          >
-            <ImagePlus size={20} />
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleImageSelect}
-          />
-
           <input
             value={text}
             onChange={(e) => {
               setText(e.target.value);
               handleTypingEmit();
             }}
-            placeholder={`Message ${isChannel ? "#" + currentChannel.name : channelName}`}
+            placeholder={`Message #${currentChannel.name}`}
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--text-muted)]/50"
           />
-
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setShowEmoji(!showEmoji)}
-              className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-            >
-              <Smile size={20} />
-            </button>
-            {showEmoji && (
-              <div className="absolute bottom-full right-0 mb-2 z-50">
-                <EmojiPicker
-                  theme="dark"
-                  onEmojiClick={(emojiData) => {
-                    setText((prev) => prev + emojiData.emoji);
-                    setShowEmoji(false);
-                  }}
-                  width={320}
-                  height={400}
-                />
-              </div>
-            )}
-          </div>
-
           <button
             type="submit"
-            disabled={!text.trim() && !image}
+            disabled={!text.trim()}
             className="text-[var(--violet)] hover:text-[var(--violet-lite)] transition-colors disabled:opacity-30"
           >
             <Send size={20} />
           </button>
         </div>
       </form>
-
-      <OraclePanel />
     </div>
   );
 }
 
-// ─── System Message (live AC celebration) ────────────────────────────────────
 function SystemMessage({ msg }) {
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 my-1 mx-2 rounded-md bg-emerald-500/10 border border-emerald-500/30">
+    <div className="flex items-center justify-center gap-2 px-3 py-1.5 my-1 mx-2 rounded-md bg-emerald-500/10 border border-emerald-500/30">
       <Trophy size={14} className="text-yellow-400 shrink-0" />
       <span className="text-xs text-emerald-300">{msg.text}</span>
     </div>
   );
 }
 
-// ─── Message Bubble (Discord-style) ──────────────────────────────────────────
 function MessageBubble({
   msg,
   showHeader,
@@ -478,20 +315,14 @@ function MessageBubble({
   hovered,
   onHover,
   onLeave,
-  onReply,
   onEdit,
   onDelete,
-  onReaction,
-  onAskOracle,
   editing,
   editText,
   setEditText,
   onEditSubmit,
   onEditCancel,
-  userId,
 }) {
-  const [showReactionPicker, setShowReactionPicker] = useState(false);
-
   const time = new Date(msg.createdAt).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
@@ -506,17 +337,7 @@ function MessageBubble({
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
     >
-      {/* Reply reference */}
-      {msg.replyTo && (
-        <div className="flex items-center gap-1.5 ml-14 mb-0.5 text-xs text-[var(--text-muted)]">
-          <CornerUpRight size={12} className="shrink-0" />
-          <span className="font-medium">{msg.replyTo.sender?.username}</span>
-          <span className="truncate max-w-[300px]">{msg.replyTo.text}</span>
-        </div>
-      )}
-
       <div className="flex gap-3">
-        {/* Avatar */}
         {showHeader ? (
           <img
             src={msg.sender?.profilePic}
@@ -530,7 +351,6 @@ function MessageBubble({
           </div>
         )}
 
-        {/* Content */}
         <div className="flex-1 min-w-0">
           {showHeader && (
             <div className="flex items-baseline gap-2">
@@ -560,72 +380,21 @@ function MessageBubble({
               </p>
             </div>
           ) : (
-            <>
-              {msg.text && (
-                <MessageContent
-                  text={msg.text}
-                  edited={msg.edited}
-                  problemMetadata={msg.problemMetadata}
-                />
-              )}
-              {msg.image && (
-                <img
-                  src={msg.image}
-                  className="mt-1 max-w-[400px] max-h-[300px] rounded-lg object-contain cursor-pointer"
-                  onClick={() => window.open(msg.image, "_blank")}
-                />
-              )}
-            </>
-          )}
-
-          {/* Reactions */}
-          {msg.reactions?.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1">
-              {msg.reactions.map((r) => (
-                <button
-                  key={r.emoji}
-                  onClick={() => onReaction(r.emoji)}
-                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs border transition-colors ${
-                    r.users?.some((u) => (u._id || u).toString() === userId)
-                      ? "bg-[var(--violet)]/20 border-[var(--violet)] text-[var(--violet-lite)]"
-                      : "bg-[var(--bg-surface)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--violet)]"
-                  }`}
-                >
-                  <span>{r.emoji}</span>
-                  <span>{r.users?.length || 0}</span>
-                </button>
-              ))}
-            </div>
+            msg.text && (
+              <MessageContent
+                text={msg.text}
+                edited={msg.edited}
+                problemMetadata={msg.problemMetadata}
+              />
+            )
           )}
         </div>
       </div>
 
-      {/* Hover Action Bar */}
-      {hovered && !editing && (
+      {hovered && !editing && isOwn && (
         <div className="absolute -top-3 right-4 flex items-center bg-[var(--bg-card)] border border-[var(--border)] rounded-md shadow-lg overflow-hidden">
-          <ActionBtn icon={Smile} onClick={() => setShowReactionPicker(true)} tooltip="React" />
-          <ActionBtn icon={Reply} onClick={onReply} tooltip="Reply" />
-          {isOwn && <ActionBtn icon={Pencil} onClick={onEdit} tooltip="Edit" />}
-          {isOwn && <ActionBtn icon={Trash2} onClick={onDelete} tooltip="Delete" className="text-red-400" />}
-        </div>
-      )}
-
-      {/* Reaction Picker */}
-      {showReactionPicker && (
-        <div className="absolute -top-[420px] right-4 z-50">
-          <EmojiPicker
-            theme="dark"
-            onEmojiClick={(emojiData) => {
-              onReaction(emojiData.emoji);
-              setShowReactionPicker(false);
-            }}
-            width={320}
-            height={400}
-          />
-          <div
-            className="fixed inset-0 z-[-1]"
-            onClick={() => setShowReactionPicker(false)}
-          />
+          <ActionBtn icon={Pencil} onClick={onEdit} tooltip="Edit" />
+          <ActionBtn icon={Trash2} onClick={onDelete} tooltip="Delete" className="text-red-400" />
         </div>
       )}
     </div>

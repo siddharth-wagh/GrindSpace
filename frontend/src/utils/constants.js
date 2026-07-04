@@ -21,16 +21,8 @@ export const getChannelsRoute = (serverId) => `${SERVER_ROUTES}/${serverId}/chan
 // Messages
 export const MESSAGE_ROUTES = `${HOST}/api/messages`;
 
-// DMs
-export const DM_ROUTES = `${HOST}/api/dm`;
-
 // Friends
 export const FRIEND_ROUTES = `${HOST}/api/friends`;
-
-// Codeforces problem metadata
-export const CF_ROUTES = `${HOST}/api/codeforces`;
-export const getProblemMetaRoute = (contestId, index) =>
-  `${CF_ROUTES}/problem/${contestId}/${index}`;
 
 // Problems (unfurl + solve marks)
 export const PROBLEM_ROUTES = `${HOST}/api/problems`;
@@ -63,10 +55,6 @@ export const getContestScoreboardRoute = (contestId) =>
   `${CONTEST_ROUTES}/${contestId}/scoreboard`;
 export const getEndContestRoute = (contestId) => `${CONTEST_ROUTES}/${contestId}/end`;
 export const getUpsolveRoute = (contestId) => `${CONTEST_ROUTES}/${contestId}/upsolve`;
-
-// Oracle (AI)
-export const ORACLE_ROUTES = `${HOST}/api/oracle`;
-export const ORACLE_QUERY = `${ORACLE_ROUTES}/query`;
 
 // CP rebrand labels
 export const LABELS = {

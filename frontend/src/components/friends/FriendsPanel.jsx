@@ -1,13 +1,10 @@
 import { useState, useEffect } from "react";
 import { useAppStore } from "@/store";
 import { apiClient } from "@/lib/api-client";
-import { FRIEND_ROUTES, DM_ROUTES } from "@/utils/constants";
+import { FRIEND_ROUTES } from "@/utils/constants";
 import {
   UserPlus,
   UserCheck,
-  UserX,
-  MessageCircle,
-  Search,
   X,
   Check,
   Clock,
@@ -22,8 +19,6 @@ export default function FriendsPanel({ socket }) {
     friendsView,
     setFriendsView,
     onlineUsers,
-    setCurrentConversation,
-    setActiveView,
   } = useAppStore();
 
   // Fetch friends + requests on mount
@@ -100,15 +95,6 @@ export default function FriendsPanel({ socket }) {
     } catch (_) {}
   };
 
-  const handleStartDM = async (userId) => {
-    try {
-      const res = await apiClient.post(`${DM_ROUTES}/create`, {
-        targetUserId: userId,
-      });
-      setCurrentConversation(res.data.data);
-    } catch (_) {}
-  };
-
   const tabs = [
     { key: "online", label: "Online" },
     { key: "all", label: "All" },
@@ -120,7 +106,7 @@ export default function FriendsPanel({ socket }) {
   const displayFriends = friendsView === "online" ? onlineFriends : friends;
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--bg-dark)]">
+    <div className="flex-1 h-full flex flex-col bg-[var(--bg-dark)]">
       {/* Header */}
       <div className="h-12 min-h-[48px] flex items-center px-4 border-b border-[var(--border)] gap-4">
         <span className="font-semibold text-sm">Friends</span>
@@ -167,19 +153,12 @@ export default function FriendsPanel({ socket }) {
                 user={friend}
                 isOnline={onlineUsers.has(friend._id)}
                 actions={
-                  <>
-                    <ActionIcon
-                      icon={MessageCircle}
-                      tooltip="Message"
-                      onClick={() => handleStartDM(friend._id)}
-                    />
-                    <ActionIcon
-                      icon={X}
-                      tooltip="Remove"
-                      onClick={() => handleRemove(friend._id)}
-                      className="text-red-400"
-                    />
-                  </>
+                  <ActionIcon
+                    icon={X}
+                    tooltip="Remove"
+                    onClick={() => handleRemove(friend._id)}
+                    className="text-red-400"
+                  />
                 }
               />
             ))}

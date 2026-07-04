@@ -1,11 +1,9 @@
 import { create } from "zustand";
 
 export const useAppStore = create((set, get) => ({
-  // ── Auth ───────────────────────────────────────────────────────────────────
   userInfo: null,
   setUserInfo: (userInfo) => set({ userInfo }),
 
-  // ── Servers ────────────────────────────────────────────────────────────────
   servers: [],
   setServers: (servers) => set({ servers }),
   addServer: (server) =>
@@ -18,7 +16,6 @@ export const useAppStore = create((set, get) => ({
   currentServer: null,
   setCurrentServer: (server) => set({ currentServer: server }),
 
-  // ── Channels ───────────────────────────────────────────────────────────────
   channels: [],
   setChannels: (channels) => set({ channels }),
   addChannel: (channel) =>
@@ -31,7 +28,6 @@ export const useAppStore = create((set, get) => ({
   currentChannel: null,
   setCurrentChannel: (channel) => set({ currentChannel: channel }),
 
-  // ── Messages ───────────────────────────────────────────────────────────────
   messages: [],
   setMessages: (messages) => set({ messages }),
   addMessage: (message) =>
@@ -47,11 +43,9 @@ export const useAppStore = create((set, get) => ({
       ),
     })),
 
-  // ── Members ────────────────────────────────────────────────────────────────
   members: [],
   setMembers: (members) => set({ members }),
 
-  // ── Online Users ───────────────────────────────────────────────────────────
   onlineUsers: new Set(),
   setOnlineUsers: (onlineUsers) => set({ onlineUsers }),
   addOnlineUser: (userId) =>
@@ -67,43 +61,16 @@ export const useAppStore = create((set, get) => ({
       return { onlineUsers: updated };
     }),
 
-  // ── Active View ────────────────────────────────────────────────────────────
-  activeView: "server", // "server" | "dm"
+  activeView: "server",
   setActiveView: (view) => set({ activeView: view }),
 
-  // ── DM / Conversations ────────────────────────────────────────────────────
-  conversations: [],
-  setConversations: (conversations) => set({ conversations }),
-  currentConversation: null,
-  setCurrentConversation: (conversation) =>
-    set({ currentConversation: conversation }),
-
-  // ── Friends ────────────────────────────────────────────────────────────────
   friends: [],
   setFriends: (friends) => set({ friends }),
   friendRequests: { incoming: [], outgoing: [] },
   setFriendRequests: (friendRequests) => set({ friendRequests }),
-  friendsView: "online", // "online" | "all" | "pending" | "add"
+  friendsView: "online",
   setFriendsView: (view) => set({ friendsView: view }),
 
-  // ── Voice ──────────────────────────────────────────────────────────────────
-  currentVoiceChannel: null,
-  setCurrentVoiceChannel: (channel) => set({ currentVoiceChannel: channel }),
-  voiceParticipants: {},
-  setVoiceParticipants: (channelId, participants) =>
-    set((state) => ({
-      voiceParticipants: { ...state.voiceParticipants, [channelId]: participants },
-    })),
-  isMuted: false,
-  setIsMuted: (muted) => set({ isMuted: muted }),
-  isDeafened: false,
-  setIsDeafened: (deafened) => set({ isDeafened: deafened }),
-
-  // ── Reply ──────────────────────────────────────────────────────────────────
-  replyingTo: null,
-  setReplyingTo: (message) => set({ replyingTo: message }),
-
-  // ── Problem Ledger ─────────────────────────────────────────────────────────
   channelLedger: [],
   setChannelLedger: (list) => set({ channelLedger: list }),
   addLedgerProblem: (problem) =>
@@ -114,45 +81,11 @@ export const useAppStore = create((set, get) => ({
   ledgerTick: 0,
   bumpLedgerTick: () => set((state) => ({ ledgerTick: state.ledgerTick + 1 })),
 
-  // ── War Room (live AC) ──────────────────────────────────────────────────────
-  warRoomActiveProblem: null,
-  setWarRoomActiveProblem: (problem) => set({ warRoomActiveProblem: problem }),
-  recentACs: [],
-  addRecentAC: (ac) =>
-    set((state) => ({ recentACs: [ac, ...state.recentACs].slice(0, 20) })),
-  warRoomStatus: {},
-  setWarRoomMemberStatus: (userId, info) =>
-    set((state) => ({
-      warRoomStatus: { ...state.warRoomStatus, [userId]: info },
-    })),
-  clearWarRoomStatus: () => set({ warRoomStatus: {} }),
-
-  // ── Virtual Contest ─────────────────────────────────────────────────────────
   activeContest: null,
   setActiveContest: (contest) => set({ activeContest: contest }),
   scoreboard: [],
   setScoreboard: (rows) => set({ scoreboard: rows }),
 
-  // ── Command Palette ─────────────────────────────────────────────────────────
-  commandPaletteOpen: false,
-  setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
-  toggleCommandPalette: () =>
-    set((state) => ({ commandPaletteOpen: !state.commandPaletteOpen })),
-
-  // ── Oracle ──────────────────────────────────────────────────────────────────
-  oracleOpen: false,
-  oracleCode: "",
-  oracleAnswer: "",
-  oracleLoading: false,
-  oracleMode: "complexity",
-  openOracle: (code) =>
-    set({ oracleOpen: true, oracleCode: code, oracleAnswer: "", oracleMode: "complexity" }),
-  closeOracle: () => set({ oracleOpen: false }),
-  setOracleAnswer: (answer) => set({ oracleAnswer: answer }),
-  setOracleLoading: (loading) => set({ oracleLoading: loading }),
-  setOracleMode: (mode) => set({ oracleMode: mode }),
-
-  // ── UI ─────────────────────────────────────────────────────────────────────
   showMemberSidebar: true,
   setShowMemberSidebar: (show) => set({ showMemberSidebar: show }),
   rightPanelTab: "members",
@@ -163,7 +96,6 @@ export const useAppStore = create((set, get) => ({
   setError: (error) => set({ error }),
   clearError: () => set({ error: null }),
 
-  // ── Reset ──────────────────────────────────────────────────────────────────
   reset: () =>
     set({
       userInfo: null,
@@ -175,28 +107,15 @@ export const useAppStore = create((set, get) => ({
       members: [],
       onlineUsers: new Set(),
       activeView: "server",
-      conversations: [],
-      currentConversation: null,
       friends: [],
       friendRequests: { incoming: [], outgoing: [] },
       friendsView: "online",
-      currentVoiceChannel: null,
-      voiceParticipants: {},
-      isMuted: false,
-      isDeafened: false,
-      replyingTo: null,
-      showMemberSidebar: true,
-      rightPanelTab: "members",
       channelLedger: [],
-      warRoomActiveProblem: null,
-      recentACs: [],
-      warRoomStatus: {},
+      ledgerTick: 0,
       activeContest: null,
       scoreboard: [],
-      commandPaletteOpen: false,
-      oracleOpen: false,
-      oracleCode: "",
-      oracleAnswer: "",
+      showMemberSidebar: true,
+      rightPanelTab: "members",
       isLoading: false,
       error: null,
     }),

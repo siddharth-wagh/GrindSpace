@@ -10,11 +10,8 @@ import authRoutes from "./src/routes/auth.routes.js";
 import serverRoutes from "./src/routes/server.routes.js";
 import channelRoutes from "./src/routes/channel.routes.js";
 import messageRoutes from "./src/routes/message.routes.js";
-import dmRoutes from "./src/routes/dm.routes.js";
 import friendRoutes from "./src/routes/friend.routes.js";
-import codeforcesRoutes from "./src/routes/codeforces.routes.js";
 import ledgerRoutes from "./src/routes/ledger.routes.js";
-import oracleRoutes from "./src/routes/oracle.routes.js";
 import problemRoutes from "./src/routes/problem.routes.js";
 import leaderboardRoutes from "./src/routes/leaderboard.routes.js";
 import cpRoutes from "./src/routes/cp.routes.js";
@@ -38,10 +35,8 @@ export const io = new Server(httpServer, {
   },
 });
 
-// ─── Shared State ────────────────────────────────────────────────────────────
-export const userSocketMap = {}; // { socketId: userId }
-const voiceChannelMembers = {}; // { channelId: Set<socketId> }
-export const contestRoomMembers = {}; // { channelId: Set<userId> }
+export const userSocketMap = {};
+export const contestRoomMembers = {};
 
 if (process.env.REDIS_URL) {
   try {
@@ -54,11 +49,9 @@ if (process.env.REDIS_URL) {
   }
 }
 
-// ─── Socket.io ───────────────────────────────────────────────────────────────
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
-  // ── Online Status ─────────────────────────────────────────────────────────
   socket.on("user-online", async (userId) => {
     if (!userId) return;
     userSocketMap[socket.id] = userId;
@@ -68,7 +61,6 @@ io.on("connection", (socket) => {
     io.emit("user-status-change", { userId, status: "online" });
   });
 
-  // ── Channel Rooms (text channels in servers) ──────────────────────────────
   socket.on("join-channel", (channelId) => {
     socket.join(`channel:${channelId}`);
     const userId = userSocketMap[socket.id];
@@ -86,11 +78,6 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("set-active-problem", ({ channelId, problem }) => {
-    socket.to(`channel:${channelId}`).emit("warroom-active-problem", { channelId, problem });
-  });
-
-  // ── Server Room (for server-wide events) ──────────────────────────────────
   socket.on("join-server", (serverId) => {
     socket.join(`server:${serverId}`);
   });
@@ -99,105 +86,18 @@ io.on("connection", (socket) => {
     socket.leave(`server:${serverId}`);
   });
 
-  // ── DM / Conversation Rooms ───────────────────────────────────────────────
-  socket.on("join-conversation", (conversationId) => {
-    socket.join(`conversation:${conversationId}`);
-  });
-
-  socket.on("leave-conversation", (conversationId) => {
-    socket.leave(`conversation:${conversationId}`);
-  });
-
-  // ── Typing Indicators ─────────────────────────────────────────────────────
-  socket.on("typing-start", ({ channelId, conversationId, userId, username }) => {
+  socket.on("typing-start", ({ channelId, userId, username }) => {
     if (channelId) {
       socket.to(`channel:${channelId}`).emit("user-typing", { userId, username });
-    } else if (conversationId) {
-      socket.to(`conversation:${conversationId}`).emit("user-typing", { userId, username });
     }
   });
 
-  socket.on("typing-stop", ({ channelId, conversationId, userId }) => {
+  socket.on("typing-stop", ({ channelId, userId }) => {
     if (channelId) {
       socket.to(`channel:${channelId}`).emit("user-stopped-typing", { userId });
-    } else if (conversationId) {
-      socket.to(`conversation:${conversationId}`).emit("user-stopped-typing", { userId });
     }
   });
 
-  // ── Voice Channels ────────────────────────────────────────────────────────
-  socket.on("join-voice", (channelId) => {
-    if (!voiceChannelMembers[channelId]) {
-      voiceChannelMembers[channelId] = new Set();
-    }
-    voiceChannelMembers[channelId].add(socket.id);
-    socket.join(`voice:${channelId}`);
-
-    // Notify others in the voice channel
-    socket.to(`voice:${channelId}`).emit("new-peer", { from: socket.id });
-
-    // Broadcast updated participant list
-    broadcastVoiceState(channelId);
-  });
-
-  socket.on("leave-voice", (channelId) => {
-    voiceChannelMembers[channelId]?.delete(socket.id);
-    socket.leave(`voice:${channelId}`);
-    socket.to(`voice:${channelId}`).emit("peer-disconnected", socket.id);
-    broadcastVoiceState(channelId);
-  });
-
-  socket.on("voice-state-update", ({ channelId, muted, deafened }) => {
-    socket.to(`voice:${channelId}`).emit("voice-state-update", {
-      socketId: socket.id,
-      userId: userSocketMap[socket.id],
-      muted,
-      deafened,
-    });
-  });
-
-  // ── WebRTC Signaling (shared for voice channels + DM calls) ───────────────
-  socket.on("offer", ({ to, sdp }) => {
-    io.to(to).emit("offer", { from: socket.id, sdp });
-  });
-
-  socket.on("answer", ({ to, sdp }) => {
-    io.to(to).emit("answer", { from: socket.id, sdp });
-  });
-
-  socket.on("candidate", ({ to, candidate }) => {
-    io.to(to).emit("candidate", { from: socket.id, candidate });
-  });
-
-  // ── DM Calls ──────────────────────────────────────────────────────────────
-  socket.on("dm-call-initiate", ({ conversationId, callType }) => {
-    socket.to(`conversation:${conversationId}`).emit("dm-call-ring", {
-      conversationId,
-      from: userSocketMap[socket.id],
-      callType,
-    });
-  });
-
-  socket.on("dm-call-accept", ({ conversationId }) => {
-    socket.to(`conversation:${conversationId}`).emit("dm-call-accepted", {
-      conversationId,
-      from: socket.id,
-    });
-  });
-
-  socket.on("dm-call-decline", ({ conversationId }) => {
-    socket.to(`conversation:${conversationId}`).emit("dm-call-declined", {
-      conversationId,
-    });
-  });
-
-  socket.on("dm-call-end", ({ conversationId }) => {
-    socket.to(`conversation:${conversationId}`).emit("dm-call-ended", {
-      conversationId,
-    });
-  });
-
-  // ── Disconnect ────────────────────────────────────────────────────────────
   socket.on("disconnect", async () => {
     console.log("User disconnected:", socket.id);
 
@@ -214,33 +114,9 @@ io.on("connection", (socket) => {
 
       delete userSocketMap[socket.id];
     }
-
-    // Clean up voice channel memberships
-    for (const channelId in voiceChannelMembers) {
-      if (voiceChannelMembers[channelId].has(socket.id)) {
-        voiceChannelMembers[channelId].delete(socket.id);
-        io.to(`voice:${channelId}`).emit("peer-disconnected", socket.id);
-        broadcastVoiceState(channelId);
-      }
-    }
   });
 });
 
-function broadcastVoiceState(channelId) {
-  const members = voiceChannelMembers[channelId];
-  const participants = members
-    ? [...members].map((sid) => ({
-        socketId: sid,
-        userId: userSocketMap[sid],
-      }))
-    : [];
-  io.to(`voice:${channelId}`).emit("voice-channel-update", {
-    channelId,
-    participants,
-  });
-}
-
-// ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -251,22 +127,17 @@ app.use(
   })
 );
 
-// ─── Routes ──────────────────────────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
 app.use("/api/servers", serverRoutes);
 app.use("/api/servers/:serverId/channels", channelRoutes);
 app.use("/api/messages", messageRoutes);
-app.use("/api/dm", dmRoutes);
 app.use("/api/friends", friendRoutes);
-app.use("/api/codeforces", codeforcesRoutes);
 app.use("/api/ledger", ledgerRoutes);
-app.use("/api/oracle", oracleRoutes);
 app.use("/api/problems", problemRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/cp", cpRoutes);
 app.use("/api/contests", contestRoutes);
 
-// ─── Start ───────────────────────────────────────────────────────────────────
 const startServer = () => {
   httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`Server started on http://localhost:${PORT}`);

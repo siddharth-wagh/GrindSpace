@@ -6,10 +6,8 @@ import { GET_MY_SERVERS, HOST } from "@/utils/constants";
 import ServerSidebar from "@/components/server/ServerSidebar";
 import ChannelSidebar from "@/components/server/ChannelSidebar";
 import RightPanel from "@/components/server/RightPanel";
-import DMSidebar from "@/components/dm/DMSidebar";
 import ChatArea from "@/components/chat/ChatArea";
 import FriendsPanel from "@/components/friends/FriendsPanel";
-import CommandPalette from "@/components/CommandPalette";
 
 export default function Homepage() {
   const {
@@ -17,15 +15,12 @@ export default function Homepage() {
     setServers,
     activeView,
     currentServer,
-    currentConversation,
-    setOnlineUsers,
     addOnlineUser,
     removeOnlineUser,
   } = useAppStore();
 
   const socketRef = useRef(null);
 
-  // Initialize socket
   useEffect(() => {
     if (!userInfo?._id) return;
 
@@ -49,7 +44,6 @@ export default function Homepage() {
     };
   }, [userInfo?._id]);
 
-  // Fetch servers on mount
   useEffect(() => {
     (async () => {
       try {
@@ -61,7 +55,6 @@ export default function Homepage() {
     })();
   }, []);
 
-  // Join server rooms when servers change
   useEffect(() => {
     const socket = socketRef.current;
     if (!socket) return;
@@ -69,7 +62,6 @@ export default function Homepage() {
     servers.forEach((s) => socket.emit("join-server", s._id));
   }, [useAppStore((s) => s.servers)]);
 
-  // Lock body scroll
   useEffect(() => {
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
@@ -80,38 +72,30 @@ export default function Homepage() {
   }, []);
 
   const socket = socketRef.current;
-  const showFriendsPanel = activeView === "dm" && !currentConversation;
 
   return (
     <div
       className="h-screen w-screen flex overflow-hidden"
       style={{ position: "fixed", inset: 0, background: "var(--bg-deepest)" }}
     >
-      {/* Far left: server icons */}
       <ServerSidebar />
 
-      {/* Second column: channel list or DM list */}
-      {activeView === "server" && currentServer ? (
-        <ChannelSidebar socket={socket} />
-      ) : activeView === "dm" ? (
-        <DMSidebar socket={socket} />
-      ) : (
-        <div className="w-60 min-w-[240px] bg-[var(--bg-dark)] border-r border-[var(--border)] flex items-center justify-center">
-          <p className="text-sm text-[var(--text-muted)]">Select a server</p>
-        </div>
-      )}
-
-      {/* Main area: chat or friends panel */}
-      {showFriendsPanel ? (
+      {activeView === "friends" ? (
         <FriendsPanel socket={socket} />
+      ) : currentServer ? (
+        <>
+          <ChannelSidebar socket={socket} />
+          <ChatArea socket={socket} />
+          <RightPanel />
+        </>
       ) : (
-        <ChatArea socket={socket} />
+        <>
+          <div className="w-60 min-w-[240px] bg-[var(--bg-dark)] border-r border-[var(--border)] flex items-center justify-center">
+            <p className="text-sm text-[var(--text-muted)]">Select a squad</p>
+          </div>
+          <ChatArea socket={socket} />
+        </>
       )}
-
-      {/* Right panel: members + problem ledger (server view only) */}
-      {activeView === "server" && currentServer && <RightPanel />}
-
-      <CommandPalette />
     </div>
   );
 }
