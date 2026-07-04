@@ -222,7 +222,7 @@ export const joinServer = async (req, res) => {
   try {
     const { serverId } = req.params;
     const userId = req.user._id;
-    const { inviteCode } = req.body;
+    const { inviteCode } = req.body || {};
 
     const server = await Server.findById(serverId);
     if (!server) return res.status(404).json({ message: "Server not found" });

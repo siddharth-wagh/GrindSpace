@@ -1,8 +1,20 @@
 import { useAppStore } from "@/store";
 import ConversationList from "./ConversationList";
+import { apiClient } from "@/lib/api-client";
+import { LOGOUT_ROUTE } from "@/utils/constants";
+import { useNavigate } from "react-router-dom";
+import { LogOut } from "lucide-react";
 
 export default function DMSidebar({ socket }) {
-  const { userInfo } = useAppStore();
+  const { userInfo, setUserInfo, setCurrentGroup } = useAppStore();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try { await apiClient.post(LOGOUT_ROUTE, {}, { withCredentials: true }); } catch (_) {}
+    setUserInfo(undefined);
+    setCurrentGroup?.(null);
+    navigate("/auth");
+  };
 
   return (
     <div className="w-60 min-w-[240px] bg-[var(--bg-dark)] flex flex-col h-full border-r border-[var(--border)]">
@@ -30,6 +42,13 @@ export default function DMSidebar({ socket }) {
           <p className="text-xs font-semibold truncate">{userInfo?.username}</p>
           <p className="text-[10px] text-[var(--text-muted)]">Online</p>
         </div>
+        <button
+          onClick={handleLogout}
+          title="Logout"
+          className="w-7 h-7 rounded flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );
