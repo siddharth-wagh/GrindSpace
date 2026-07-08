@@ -19,14 +19,14 @@ export const createChannel = async (req, res) => {
     if (!name || !name.trim()) {
       return res.status(400).json({ message: "Channel name is required" });
     }
-    if (!type || !["text", "voice"].includes(type)) {
-      return res.status(400).json({ message: "Channel type must be 'text' or 'voice'" });
+    if (type && type !== "text") {
+      return res.status(400).json({ message: "Only text channels are supported" });
     }
 
     const server = await Server.findById(serverId);
     if (!server) return res.status(404).json({ message: "Server not found" });
 
-    if (!checkRole(server, userId, ["owner", "admin"])) {
+    if (!checkRole(server, userId, ["owner"])) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
@@ -38,7 +38,7 @@ export const createChannel = async (req, res) => {
     const channel = await Channel.create({
       server: serverId,
       name: name.trim().toLowerCase().replace(/\s+/g, "-"),
-      type,
+      type: "text",
       category: category || null,
       topic: topic || "",
       position,
@@ -80,7 +80,7 @@ export const updateChannel = async (req, res) => {
     const server = await Server.findById(serverId);
     if (!server) return res.status(404).json({ message: "Server not found" });
 
-    if (!checkRole(server, userId, ["owner", "admin"])) {
+    if (!checkRole(server, userId, ["owner"])) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
@@ -112,7 +112,7 @@ export const deleteChannel = async (req, res) => {
     const server = await Server.findById(serverId);
     if (!server) return res.status(404).json({ message: "Server not found" });
 
-    if (!checkRole(server, userId, ["owner", "admin"])) {
+    if (!checkRole(server, userId, ["owner"])) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
@@ -144,7 +144,7 @@ export const reorderChannels = async (req, res) => {
     const server = await Server.findById(serverId);
     if (!server) return res.status(404).json({ message: "Server not found" });
 
-    if (!checkRole(server, userId, ["owner", "admin"])) {
+    if (!checkRole(server, userId, ["owner"])) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
