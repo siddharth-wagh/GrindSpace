@@ -83,6 +83,12 @@ async function checkOneUser(userId, channelIds) {
         lang: sub.programmingLanguage || "",
         timeMs: sub.timeConsumedMillis || null,
       });
+
+      // Tell the frontend to refresh the scoreboard when any new submission
+      // is detected (accepted or not — WA attempts matter for standings too).
+      io.to(`channel:${channelId}`).emit("scoreboard-refresh", {
+        channelId,
+      });
     }
   }
 

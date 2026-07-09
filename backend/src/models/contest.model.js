@@ -42,23 +42,38 @@ const contestSchema = new mongoose.Schema(
       type: Number,
       default: 120,
     },
+    ratingMin: {
+      type: Number,
+      default: 800,
+    },
+    ratingMax: {
+      type: Number,
+      default: 1500,
+    },
+    problemCount: {
+      type: Number,
+      default: 5,
+    },
+    scheduledStart: {
+      type: Date,
+    },
     startTime: {
       type: Date,
-      default: Date.now,
     },
     endTime: {
       type: Date,
     },
     status: {
       type: String,
-      enum: ["running", "ended"],
-      default: "running",
+      enum: ["lobby", "running", "ended"],
+      default: "lobby",
     },
   },
   { timestamps: true }
 );
 
 contestSchema.index({ channel: 1, status: 1 });
+contestSchema.index({ status: 1, scheduledStart: 1 });
 
 const Contest = mongoose.model("Contest", contestSchema);
 export default Contest;

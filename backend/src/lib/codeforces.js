@@ -116,6 +116,28 @@ export async function getRatedHistory(handle) {
   return data.result;
 }
 
+// Full set of problems a handle has ever solved ("contestId-index" keys).
+// Used to pick contest problems nobody in the lobby has already solved.
+export async function getSolvedSet(handle) {
+  const key = `cf:solvedset:${handle.toLowerCase()}`;
+  const cached = await kvGet(key);
+  if (cached) return new Set(cached);
+
+  const data = await callCf(
+    `user.status?handle=${encodeURIComponent(handle)}&from=1&count=100000`
+  );
+  if (data.status !== "OK") return new Set();
+
+  const solved = new Set();
+  for (const sub of data.result) {
+    if (sub.verdict === "OK" && sub.problem && sub.problem.contestId != null) {
+      solved.add(`${sub.problem.contestId}-${sub.problem.index}`);
+    }
+  }
+  await kvSet(key, Array.from(solved), 10 * 60);
+  return solved;
+}
+
 export async function getAllSubmissions(handle, count) {
   const key = `cf:subs:${handle.toLowerCase()}:${count}`;
   const cached = await kvGet(key);
