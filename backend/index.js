@@ -30,7 +30,10 @@ const httpServer = createServer(app);
 
 export const io = new Server(httpServer, {
   cors: {
-    origin: "*",
+    origin: [
+      "http://localhost:5173",
+      "http://192.168.1.9:5173",
+    ],
     credentials: true,
   },
 });
@@ -122,11 +125,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(
   cors({
-    origin:"*",
+    origin: "http://localhost:5173",
     credentials: true,
   })
 );
-
 app.use("/api/auth", authRoutes);
 app.use("/api/servers", serverRoutes);
 app.use("/api/servers/:serverId/channels", channelRoutes);
