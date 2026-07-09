@@ -8,6 +8,16 @@ import crypto from "crypto";
 
 const generateInviteCode = () => crypto.randomBytes(4).toString("hex"); // 8 chars
 
+const getMemberUserId = (member) => member?.user?._id ?? member?.user ?? member?._id ?? member ?? null;
+
+const isServerMember = (server, userId) => {
+  const members = Array.isArray(server?.members) ? server.members : [];
+  return members.some((member) => {
+    const memberUserId = getMemberUserId(member);
+    return memberUserId && memberUserId.toString() === userId.toString();
+  });
+};
+
 // ─── POST /api/servers/create ────────────────────────────────────────────────
 export const createServer = async (req, res) => {
   try {
@@ -224,11 +234,15 @@ export const joinServer = async (req, res) => {
     const userId = req.user._id;
     const { inviteCode } = req.body;
 
+    if (!serverId) {
+      return res.status(400).json({ message: "Server ID is required" });
+    }
+
     const server = await Server.findById(serverId);
     if (!server) return res.status(404).json({ message: "Server not found" });
 
     // Check if already a member
-    if (server.members.some((m) => m.user.toString() === userId.toString())) {
+    if (isServerMember(server, userId)) {
       return res.status(200).json({ data: server, message: "Already a member" });
     }
 
@@ -431,7 +445,7 @@ export const joinByInviteCode = async (req, res) => {
     const server = await Server.findOne({ inviteCode });
     if (!server) return res.status(404).json({ message: "Invalid invite code" });
 
-    if (server.members.some((m) => m.user.toString() === userId.toString())) {
+    if (isServerMember(server, userId)) {
       return res.status(200).json({ data: server, message: "Already a member" });
     }
 

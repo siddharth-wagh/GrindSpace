@@ -42,29 +42,28 @@ export const signup = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-  
   try {
     const { email, password } = req.body;
-    // const user = await User.findOne({ email });
-   
-    // if (!user) {
-    //   return res.status(400).json({ message: "Invalid credentials" });
-    // }
+    const user = await User.findOne({ email });
 
-    // const isPasswordCorrect = await bcrypt.compare(password, user.password);
-     
-    // if (!isPasswordCorrect) {
-    //   return res.status(400).json({ message: "Invalid credentials" });
-    // }
+    if (!user) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
-    generateToken(email, res);
-    // user.status = "online";
-    // awa/it user.save();
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordCorrect) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    generateToken(user._id, res);
+    user.status = "online";
+    await user.save();
 
     res.status(200).json({
-      _id: 1,
-      username: "sid",
-      email: "sid@gmail.com",
+      _id: user._id,
+      username: user.username,
+      email: user.email,
     });
   } catch (error) {
     console.log("Error in login controller", error);
