@@ -1,45 +1,50 @@
 import { useState } from "react";
-import { Trophy, Radio, ChevronDown } from "lucide-react";
+import { Trophy, Radio, CalendarClock } from "lucide-react";
 import { useAppStore } from "@/store";
-import VirtualContestModal from "./VirtualContestModal";
-import ContestScoreboard from "./ContestScoreboard";
+import AnnounceContestModal from "./AnnounceContestModal";
 
 function StartContestButton({ channelId }) {
   const activeContest = useAppStore((state) => state.activeContest);
   const setActiveContest = useAppStore((state) => state.setActiveContest);
+  const setRightPanelTab = useAppStore((state) => state.setRightPanelTab);
+  const setShowMemberSidebar = useAppStore((state) => state.setShowMemberSidebar);
   const [modalOpen, setModalOpen] = useState(false);
-  const [panelOpen, setPanelOpen] = useState(false);
 
-  const isLive = activeContest && activeContest.status === "running";
+  const status = activeContest ? activeContest.status : null;
+  const isLive = status === "running";
+  const isLobby = status === "lobby";
 
-  function handleStarted(contest) {
+  function openBoard() {
+    setShowMemberSidebar(true);
+    setRightPanelTab("board");
+  }
+
+  function handleAnnounced(contest) {
     setActiveContest(contest);
+    openBoard();
   }
 
   if (isLive) {
     return (
-      <div className="relative">
-        <button
-          onClick={() => setPanelOpen((prev) => !prev)}
-          className="flex items-center gap-2 rounded-full border border-[var(--violet)] bg-[var(--violet)]/15 px-3 py-1.5 text-sm text-[var(--text-primary)] hover:bg-[var(--violet)]/25"
-        >
-          <Radio size={14} className="animate-pulse text-[var(--pink)]" />
-          Contest live
-          <ChevronDown
-            size={14}
-            className={
-              "text-[var(--text-muted)] transition-transform " +
-              (panelOpen ? "rotate-180" : "")
-            }
-          />
-        </button>
+      <button
+        onClick={openBoard}
+        className="flex items-center gap-2 rounded-full border border-[var(--violet)] bg-[var(--violet)]/15 px-3 py-1.5 text-sm text-[var(--text-primary)] hover:bg-[var(--violet)]/25"
+      >
+        <Radio size={14} className="animate-pulse text-[var(--pink)]" />
+        Contest live
+      </button>
+    );
+  }
 
-        {panelOpen ? (
-          <div className="absolute right-0 z-40 mt-2 w-[32rem] max-w-[90vw]">
-            <ContestScoreboard contestId={activeContest._id} />
-          </div>
-        ) : null}
-      </div>
+  if (isLobby) {
+    return (
+      <button
+        onClick={openBoard}
+        className="flex items-center gap-2 rounded-full border border-[var(--violet)] bg-[var(--violet)]/10 px-3 py-1.5 text-sm text-[var(--text-primary)] hover:bg-[var(--violet)]/20"
+      >
+        <CalendarClock size={14} className="text-[var(--violet-lite)]" />
+        Contest scheduled
+      </button>
     );
   }
 
@@ -54,10 +59,10 @@ function StartContestButton({ channelId }) {
       </button>
 
       {modalOpen ? (
-        <VirtualContestModal
+        <AnnounceContestModal
           channelId={channelId}
           onClose={() => setModalOpen(false)}
-          onStarted={handleStarted}
+          onAnnounced={handleAnnounced}
         />
       ) : null}
     </>

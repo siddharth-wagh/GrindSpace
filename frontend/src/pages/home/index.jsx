@@ -17,6 +17,7 @@ export default function Homepage() {
     currentServer,
     addOnlineUser,
     removeOnlineUser,
+    setSocket,
   } = useAppStore();
 
   const socketRef = useRef(null);
@@ -28,6 +29,7 @@ export default function Homepage() {
       withCredentials: true,
     });
     socketRef.current = socket;
+    setSocket(socket);
 
     socket.on("connect", () => {
       socket.emit("user-online", userInfo._id);
@@ -41,6 +43,7 @@ export default function Homepage() {
     return () => {
       socket.disconnect();
       socketRef.current = null;
+      setSocket(null);
     };
   }, [userInfo?._id]);
 

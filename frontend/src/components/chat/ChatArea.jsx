@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAppStore } from "@/store";
 import { apiClient } from "@/lib/api-client";
-import { MESSAGE_ROUTES } from "@/utils/constants";
+import { MESSAGE_ROUTES, getChannelContestRoute } from "@/utils/constants";
 import confetti from "canvas-confetti";
 import MessageContent from "./MessageContent";
 import StartContestButton from "../contest/StartContestButton";
@@ -58,6 +58,23 @@ export default function ChatArea({ socket }) {
     })();
   }, [channelId]);
 
+  // Rehydrate any running contest for this channel so it survives a refresh
+  // and is visible to members who weren't connected when it started.
+  useEffect(() => {
+    if (!channelId) {
+      setActiveContest(null);
+      return;
+    }
+    (async () => {
+      try {
+        const res = await apiClient.get(getChannelContestRoute(channelId));
+        setActiveContest(res.data.data || null);
+      } catch (err) {
+        setActiveContest(null);
+      }
+    })();
+  }, [channelId]);
+
   useEffect(() => {
     if (!socket || !channelId) return;
 
@@ -99,6 +116,38 @@ export default function ChatArea({ socket }) {
     };
     const handleContestStarted = ({ contest }) => setActiveContest(contest);
     const handleContestEnded = () => setActiveContest(null);
+    const handleContestAnnounced = ({ contest }) => {
+      setActiveContest(contest);
+      const whenText = contest.scheduledStart
+        ? new Date(contest.scheduledStart).toLocaleString([], {
+            dateStyle: "medium",
+            timeStyle: "short",
+          })
+        : "soon";
+      const host =
+        contest.createdBy && contest.createdBy.username
+          ? contest.createdBy.username
+          : "someone";
+      addMessage({
+        _id: "announce-" + contest._id,
+        system: true,
+        text:
+          "📣 " +
+          host +
+          " scheduled “" +
+          contest.name +
+          "” (" +
+          contest.ratingMin +
+          "–" +
+          contest.ratingMax +
+          ") for " +
+          whenText +
+          ". Open the Board tab to join.",
+        createdAt: new Date().toISOString(),
+      });
+      scrollToBottom();
+    };
+    const handleContestUpdated = ({ contest }) => setActiveContest(contest);
 
     socket.on("new-message", handleNewMessage);
     socket.on("message-deleted", handleDeleted);
@@ -109,6 +158,8 @@ export default function ChatArea({ socket }) {
     socket.on("ac-verdict", handleAC);
     socket.on("contest-started", handleContestStarted);
     socket.on("contest-ended", handleContestEnded);
+    socket.on("contest-announced", handleContestAnnounced);
+    socket.on("contest-updated", handleContestUpdated);
 
     return () => {
       socket.off("new-message", handleNewMessage);
@@ -120,6 +171,8 @@ export default function ChatArea({ socket }) {
       socket.off("ac-verdict", handleAC);
       socket.off("contest-started", handleContestStarted);
       socket.off("contest-ended", handleContestEnded);
+      socket.off("contest-announced", handleContestAnnounced);
+      socket.off("contest-updated", handleContestUpdated);
     };
   }, [socket, channelId]);
 

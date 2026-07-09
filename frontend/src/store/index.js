@@ -86,6 +86,9 @@ export const useAppStore = create((set, get) => ({
   scoreboard: [],
   setScoreboard: (rows) => set({ scoreboard: rows }),
 
+  socket: null,
+  setSocket: (socket) => set({ socket }),
+
   showMemberSidebar: true,
   setShowMemberSidebar: (show) => set({ showMemberSidebar: show }),
   rightPanelTab: "members",
@@ -114,6 +117,7 @@ export const useAppStore = create((set, get) => ({
       ledgerTick: 0,
       activeContest: null,
       scoreboard: [],
+      socket: null,
       showMemberSidebar: true,
       rightPanelTab: "members",
       isLoading: false,

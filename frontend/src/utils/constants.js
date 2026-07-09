@@ -49,6 +49,11 @@ export const CONTEST_ROUTES = `${HOST}/api/contests`;
 export const CREATE_CONTEST_ROUTE = `${CONTEST_ROUTES}/create`;
 export const IMPORT_CF_CONTEST_ROUTE = `${CONTEST_ROUTES}/import-cf`;
 export const RANDOM_PROBLEMS_ROUTE = `${CONTEST_ROUTES}/random-problems`;
+export const ANNOUNCE_CONTEST_ROUTE = `${CONTEST_ROUTES}/announce`;
+export const getJoinContestRoute = (contestId) =>
+  `${CONTEST_ROUTES}/${contestId}/join`;
+export const getLeaveContestRoute = (contestId) =>
+  `${CONTEST_ROUTES}/${contestId}/leave`;
 export const getChannelContestRoute = (channelId) =>
   `${CONTEST_ROUTES}/channel/${channelId}/active`;
 export const getContestScoreboardRoute = (contestId) =>

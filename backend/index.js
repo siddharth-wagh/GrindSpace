@@ -17,6 +17,7 @@ import leaderboardRoutes from "./src/routes/leaderboard.routes.js";
 import cpRoutes from "./src/routes/cp.routes.js";
 import contestRoutes from "./src/routes/contest.routes.js";
 import { startCfPoller } from "./src/lib/cfPoller.js";
+import { startContestScheduler } from "./src/lib/contestScheduler.js";
 import { startCronJobs } from "./src/lib/cron.js";
 import { createAdapter } from "@socket.io/redis-adapter";
 import IORedis from "ioredis";
@@ -144,6 +145,7 @@ const startServer = () => {
   });
   connectDB();
   startCfPoller();
+  startContestScheduler();
   startCronJobs();
 };
 
