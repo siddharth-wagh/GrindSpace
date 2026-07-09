@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { RefreshCw, Snowflake } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { getContestScoreboardRoute } from "@/utils/constants";
+import UpsolvePanel from "./UpsolvePanel";
 
 function ContestScoreboard({ contestId }) {
   const [rows, setRows] = useState([]);
@@ -137,6 +138,13 @@ function ContestScoreboard({ contestId }) {
           </table>
         </div>
       )}
+
+      <div className="mt-4">
+        <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+          Upsolve
+        </h4>
+        <UpsolvePanel contestId={contestId} />
+      </div>
     </div>
   );
 }

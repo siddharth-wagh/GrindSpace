@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAppStore } from "@/store";
 import { apiClient } from "@/lib/api-client";
-import { CREATE_SERVER, GET_MY_SERVERS, SERVER_ROUTES } from "@/utils/constants";
-import { Plus, MessageCircle, Search, X, Upload, Globe, Lock } from "lucide-react";
+import { CREATE_SERVER, GET_MY_SERVERS, SERVER_ROUTES, LOGOUT_ROUTE } from "@/utils/constants";
+import { Plus, Users, Search, X, Upload, Globe, Lock, LogOut } from "lucide-react";
 
 export default function ServerSidebar() {
   const {
@@ -15,32 +16,41 @@ export default function ServerSidebar() {
     activeView,
     setActiveView,
     userInfo,
+    setUserInfo,
   } = useAppStore();
 
+  const navigate = useNavigate();
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
   const [showDiscover, setShowDiscover] = useState(false);
+
+  const handleLogout = async () => {
+    try { await apiClient.post(LOGOUT_ROUTE, {}, { withCredentials: true }); } catch (_) {}
+    setUserInfo(undefined);
+    setCurrentServer(null);
+    setCurrentChannel(null);
+    navigate("/auth");
+  };
 
   const handleSelectServer = (server) => {
     setActiveView("server");
     setCurrentServer(server);
   };
 
-  const handleDMClick = () => {
-    setActiveView("dm");
+  const handleFriendsClick = () => {
+    setActiveView("friends");
     setCurrentServer(null);
     setCurrentChannel(null);
   };
 
   return (
     <div className="w-[72px] min-w-[72px] bg-[var(--bg-deepest)] flex flex-col items-center py-3 gap-2 overflow-y-auto scrollbar-hide">
-      {/* DM / Home Button */}
       <SidebarIcon
-        active={activeView === "dm"}
-        onClick={handleDMClick}
-        tooltip="Direct Messages"
+        active={activeView === "friends"}
+        onClick={handleFriendsClick}
+        tooltip="Friends"
       >
-        <MessageCircle size={24} />
+        <Users size={24} />
       </SidebarIcon>
 
       <div className="w-8 h-[2px] bg-[var(--border)] rounded-full" />
@@ -82,6 +92,14 @@ export default function ServerSidebar() {
       {/* Discover */}
       <SidebarIcon onClick={() => setShowDiscover(true)} tooltip="Discover Squads" color="green">
         <Globe size={20} />
+      </SidebarIcon>
+
+      <div className="flex-1" />
+      <div className="w-8 h-[2px] bg-[var(--border)] rounded-full" />
+
+      {/* Logout */}
+      <SidebarIcon onClick={handleLogout} tooltip="Logout">
+        <LogOut size={20} className="text-rose-400" />
       </SidebarIcon>
 
       {/* Modals */}
@@ -333,9 +351,13 @@ function DiscoverModal({ onClose, onJoined }) {
 
   const handleJoin = async (serverId) => {
     try {
-      await apiClient.post(`${SERVER_ROUTES}/${serverId}/join`);
+      const res = await apiClient.post(`${SERVER_ROUTES}/${serverId}/join`);
+      console.log("Join response:", res.data);
       onJoined();
-    } catch (_) {}
+    } catch (err) {
+      console.error("Join failed:", err.response?.status, err.response?.data);
+      alert(err.response?.data?.message || "Failed to join server");
+    }
   };
 
   // Load initial list on mount

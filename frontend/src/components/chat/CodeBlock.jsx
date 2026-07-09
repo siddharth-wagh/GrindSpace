@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { Copy, Check, WrapText, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
-import { useAppStore } from "@/store";
+import { Copy, Check, WrapText, ChevronDown, ChevronUp } from "lucide-react";
 
 function CodeBlock({ code, lang }) {
   const safeCode = typeof code === "string" ? code : "";
@@ -50,13 +49,6 @@ function CodeBlock({ code, lang }) {
     setSoftWrap(!softWrap);
   }
 
-  function askOracle() {
-    const openOracle = useAppStore.getState().openOracle;
-    if (openOracle) {
-      openOracle(safeCode);
-    }
-  }
-
   function toggleExpanded() {
     setExpanded(!expanded);
   }
@@ -86,13 +78,6 @@ function CodeBlock({ code, lang }) {
         >
           <WrapText size={13} />
           wrap
-        </button>
-        <button
-          onClick={askOracle}
-          className="flex items-center gap-1 text-xs px-2 py-0.5 rounded text-[var(--pink)] hover:text-[var(--text-primary)]"
-        >
-          <Sparkles size={13} />
-          Ask Oracle
         </button>
         <button
           onClick={copyCode}

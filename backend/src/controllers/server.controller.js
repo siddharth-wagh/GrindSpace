@@ -51,27 +51,17 @@ export const createServer = async (req, res) => {
       members: [{ user: ownerId, role: "owner" }],
       inviteCode,
       tags: tags ? (Array.isArray(tags) ? tags : [tags]) : [],
-      categories: [{ name: "Text Channels", position: 0 }, { name: "Voice Channels", position: 1 }],
+      categories: [{ name: "Text Channels", position: 0 }],
     });
 
-    // Auto-create default channels
-    const [generalText, generalVoice] = await Promise.all([
-      Channel.create({
-        server: server._id,
-        name: "general",
-        type: "text",
-        category: "Text Channels",
-        position: 0,
-        isDefault: true,
-      }),
-      Channel.create({
-        server: server._id,
-        name: "General",
-        type: "voice",
-        category: "Voice Channels",
-        position: 0,
-      }),
-    ]);
+    const generalText = await Channel.create({
+      server: server._id,
+      name: "general",
+      type: "text",
+      category: "Text Channels",
+      position: 0,
+      isDefault: true,
+    });
 
     await User.findByIdAndUpdate(ownerId, {
       $addToSet: { servers: server._id },
@@ -79,7 +69,7 @@ export const createServer = async (req, res) => {
 
     return res.status(201).json({
       data: server,
-      channels: [generalText, generalVoice],
+      channels: [generalText],
       message: "Server created successfully",
     });
   } catch (error) {
@@ -162,7 +152,7 @@ export const updateServer = async (req, res) => {
     if (!server) return res.status(404).json({ message: "Server not found" });
 
     const member = server.members.find((m) => m.user.toString() === userId.toString());
-    if (!member || !["owner", "admin"].includes(member.role)) {
+    if (!member || member.role !== "owner") {
       return res.status(403).json({ message: "Not authorized" });
     }
 
@@ -232,7 +222,7 @@ export const joinServer = async (req, res) => {
   try {
     const { serverId } = req.params;
     const userId = req.user._id;
-    const { inviteCode } = req.body;
+    const { inviteCode } = req.body || {};
 
     if (!serverId) {
       return res.status(400).json({ message: "Server ID is required" });
@@ -332,37 +322,37 @@ export const changeMemberRole = async (req, res) => {
     const requesterId = req.user._id;
     const { role } = req.body;
 
-    if (!["admin", "moderator", "member"].includes(role)) {
+    if (role !== "owner" && role !== "member") {
       return res.status(400).json({ message: "Invalid role" });
     }
 
     const server = await Server.findById(serverId);
     if (!server) return res.status(404).json({ message: "Server not found" });
 
-    const requester = server.members.find((m) => m.user.toString() === requesterId.toString());
-    if (!requester || !["owner", "admin"].includes(requester.role)) {
-      return res.status(403).json({ message: "Not authorized" });
+    if (server.owner.toString() !== requesterId.toString()) {
+      return res.status(403).json({ message: "Only the owner can change roles" });
     }
 
-    // Can't change owner's role
     if (server.owner.toString() === targetId) {
       return res.status(400).json({ message: "Cannot change owner's role" });
     }
 
-    // Admins can only set moderator/member, not other admins
-    if (requester.role === "admin" && role === "admin") {
-      return res.status(403).json({ message: "Only the owner can promote to admin" });
+    const targetMember = server.members.find((m) => m.user.toString() === targetId);
+    if (!targetMember) return res.status(404).json({ message: "Member not found" });
+
+    if (role === "member") {
+      return res.status(400).json({ message: "Members can only be demoted by transferring ownership" });
     }
 
-    const updated = await Server.findOneAndUpdate(
-      { _id: serverId, "members.user": targetId },
-      { $set: { "members.$.role": role } },
-      { new: true }
+    const oldOwnerMember = server.members.find(
+      (m) => m.user.toString() === requesterId.toString()
     );
+    targetMember.role = "owner";
+    if (oldOwnerMember) oldOwnerMember.role = "member";
+    server.owner = targetId;
+    await server.save();
 
-    if (!updated) return res.status(404).json({ message: "Member not found" });
-
-    return res.status(200).json({ message: "Role updated", data: updated });
+    return res.status(200).json({ message: "Ownership transferred", data: server });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -377,25 +367,16 @@ export const kickMember = async (req, res) => {
     const server = await Server.findById(serverId);
     if (!server) return res.status(404).json({ message: "Server not found" });
 
-    const requester = server.members.find((m) => m.user.toString() === requesterId.toString());
-    if (!requester || !["owner", "admin", "moderator"].includes(requester.role)) {
-      return res.status(403).json({ message: "Not authorized" });
+    if (server.owner.toString() !== requesterId.toString()) {
+      return res.status(403).json({ message: "Only the owner can kick members" });
     }
 
     if (server.owner.toString() === targetId) {
       return res.status(400).json({ message: "Cannot kick the owner" });
     }
 
-    // Moderators can only kick members, not admins
     const target = server.members.find((m) => m.user.toString() === targetId);
     if (!target) return res.status(404).json({ message: "Member not found" });
-
-    if (requester.role === "moderator" && target.role !== "member") {
-      return res.status(403).json({ message: "Moderators can only kick members" });
-    }
-    if (requester.role === "admin" && target.role === "admin") {
-      return res.status(403).json({ message: "Admins cannot kick other admins" });
-    }
 
     await Promise.all([
       Server.findByIdAndUpdate(serverId, {
@@ -422,7 +403,7 @@ export const generateInvite = async (req, res) => {
     if (!server) return res.status(404).json({ message: "Server not found" });
 
     const member = server.members.find((m) => m.user.toString() === userId.toString());
-    if (!member || !["owner", "admin"].includes(member.role)) {
+    if (!member || member.role !== "owner") {
       return res.status(403).json({ message: "Not authorized" });
     }
 

@@ -1,7 +1,6 @@
 import Message from "../models/message.model.js";
 import Channel from "../models/channel.model.js";
 import Server from "../models/server.model.js";
-import cloudinary from "../lib/cloudinary.js";
 import { io } from "../../index.js";
 import { attachProblemMetadata } from "./ledger.controller.js";
 
@@ -10,8 +9,7 @@ export const createMessage = async (req, res) => {
   try {
     const { channelId } = req.params;
     const sender = req.user._id;
-    const { text, replyTo } = req.body;
-    const image = req.file;
+    const { text } = req.body;
 
     const channel = await Channel.findById(channelId);
     if (!channel) return res.status(404).json({ message: "Channel not found" });
@@ -22,42 +20,22 @@ export const createMessage = async (req, res) => {
     const isMember = server.members.some((m) => m.user.toString() === sender.toString());
     if (!isMember) return res.status(403).json({ message: "Not a member of this server" });
 
-    if (!image && !text) {
+    if (!text || !text.trim()) {
       return res.status(400).json({ message: "Provide some content" });
-    }
-
-    let imageUrl;
-    if (image) {
-      const base64Image = `data:${image.mimetype};base64,${image.buffer.toString("base64")}`;
-      const uploadResponse = await cloudinary.uploader.upload(base64Image, {
-        folder: "messages",
-      });
-      imageUrl = uploadResponse.secure_url;
     }
 
     const message = await Message.create({
       channel: channel._id,
       server: channel.server,
       sender,
-      image: imageUrl,
-      text: text || "",
-      replyTo: replyTo || null,
+      text,
     });
 
     await message.populate("sender", "username profilePic");
-    if (message.replyTo) {
-      await message.populate({
-        path: "replyTo",
-        select: "text sender",
-        populate: { path: "sender", select: "username" },
-      });
-    }
 
     io.to(`channel:${channel._id}`).emit("new-message", message);
 
-    if (text) {
-      attachProblemMetadata(message, text, `channel:${channel._id}`);
-    }
+    attachProblemMetadata(message, text, `channel:${channel._id}`);
 
     return res.status(201).json({ data: message, message: "Success" });
   } catch (error) {
@@ -87,12 +65,7 @@ export const getMessages = async (req, res) => {
     const messages = await Message.find(query)
       .sort({ createdAt: -1 })
       .limit(50)
-      .populate("sender", "username profilePic")
-      .populate({
-        path: "replyTo",
-        select: "text sender",
-        populate: { path: "sender", select: "username" },
-      });
+      .populate("sender", "username profilePic");
 
     return res.status(200).json({
       data: messages.reverse(),
@@ -112,14 +85,13 @@ export const deleteMessage = async (req, res) => {
     const message = await Message.findById(messageId);
     if (!message) return res.status(404).json({ message: "Message not found" });
 
-    // Allow sender or server admin/owner/mod to delete
     let canDelete = message.sender.toString() === userId.toString();
 
     if (!canDelete && message.server) {
       const server = await Server.findById(message.server);
       if (server) {
         const member = server.members.find((m) => m.user.toString() === userId.toString());
-        canDelete = member && ["owner", "admin", "moderator"].includes(member.role);
+        canDelete = member && member.role === "owner";
       }
     }
 
@@ -129,10 +101,7 @@ export const deleteMessage = async (req, res) => {
 
     await Message.findByIdAndDelete(messageId);
 
-    const room = message.channel
-      ? `channel:${message.channel}`
-      : `conversation:${message.conversation}`;
-    io.to(room).emit("message-deleted", messageId);
+    io.to(`channel:${message.channel}`).emit("message-deleted", messageId);
 
     return res.status(200).json({ message: "Message deleted" });
   } catch (error) {
@@ -163,10 +132,7 @@ export const editMessage = async (req, res) => {
     await message.save();
     await message.populate("sender", "username profilePic");
 
-    const room = message.channel
-      ? `channel:${message.channel}`
-      : `conversation:${message.conversation}`;
-    io.to(room).emit("message-edited", {
+    io.to(`channel:${message.channel}`).emit("message-edited", {
       messageId: message._id,
       text: message.text,
       edited: true,
@@ -178,48 +144,3 @@ export const editMessage = async (req, res) => {
   }
 };
 
-// ─── POST /api/messages/:messageId/reactions ────────────────────────────────
-export const toggleReaction = async (req, res) => {
-  try {
-    const { messageId } = req.params;
-    const userId = req.user._id;
-    const { emoji } = req.body;
-
-    if (!emoji) return res.status(400).json({ message: "Emoji is required" });
-
-    const message = await Message.findById(messageId);
-    if (!message) return res.status(404).json({ message: "Message not found" });
-
-    const existingReaction = message.reactions.find((r) => r.emoji === emoji);
-
-    if (existingReaction) {
-      const userIndex = existingReaction.users.findIndex(
-        (u) => u.toString() === userId.toString()
-      );
-      if (userIndex > -1) {
-        existingReaction.users.splice(userIndex, 1);
-        if (existingReaction.users.length === 0) {
-          message.reactions = message.reactions.filter((r) => r.emoji !== emoji);
-        }
-      } else {
-        existingReaction.users.push(userId);
-      }
-    } else {
-      message.reactions.push({ emoji, users: [userId] });
-    }
-
-    await message.save();
-
-    const room = message.channel
-      ? `channel:${message.channel}`
-      : `conversation:${message.conversation}`;
-    io.to(room).emit("message-reaction-update", {
-      messageId: message._id,
-      reactions: message.reactions,
-    });
-
-    return res.status(200).json({ data: message.reactions });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
