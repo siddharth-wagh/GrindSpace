@@ -30,15 +30,18 @@ import User from "./src/models/user.model.js";
 dotenv.config();
 const PORT = process.env.PORT || 8000;
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://192.168.1.9:5173",
+  ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
+];
+
 const app = express();
 const httpServer = createServer(app);
 
 export const io = new Server(httpServer, {
   cors: {
-    origin: [
-      "http://localhost:5173",
-      "http://192.168.1.9:5173",
-    ],
+    origin: allowedOrigins,
     credentials: true,
   },
 });
@@ -126,7 +129,7 @@ app.use(cookieParser());
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: allowedOrigins,
     credentials: true,
   })
 );

@@ -99,7 +99,13 @@ export const logout = async (req, res) => {
     const userId = req.user._id;
 
     await User.findByIdAndUpdate(userId, { status: "offline" });
-    res.cookie("jwt", "", { maxAge: 0 });
+    const isProd = process.env.NODE_ENV === "production";
+    res.cookie("jwt", "", {
+      maxAge: 0,
+      httpOnly: true,
+      sameSite: isProd ? "none" : "lax",
+      secure: isProd,
+    });
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     console.log("Error in logout controller", error.message);
