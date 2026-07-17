@@ -4,6 +4,7 @@ import { apiClient } from "@/lib/api-client";
 import { MESSAGE_ROUTES, getChannelContestRoute } from "@/utils/constants";
 import confetti from "canvas-confetti";
 import MessageContent from "./MessageContent";
+import ChatInput from "./ChatInput";
 import ThreadPanel from "./ThreadPanel";
 import StartContestButton from "../contest/StartContestButton";
 import { Send, Hash, Users, Pencil, Trash2, ChevronUp, Trophy, MessageSquare } from "lucide-react";
@@ -233,7 +234,7 @@ export default function ChatArea({ socket }) {
   };
 
   const handleSend = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!text.trim()) return;
     try {
       await apiClient.post(`${MESSAGE_ROUTES}/channel/${channelId}`, {
@@ -364,15 +365,15 @@ export default function ChatArea({ socket }) {
       )}
 
       <form onSubmit={handleSend} className="px-4 pb-4 pt-1">
-        <div className="flex items-center gap-2 bg-[var(--bg-surface)] rounded-lg px-3 py-2 border border-[var(--border)] focus-within:border-[var(--violet)]">
-          <input
+        <div className="flex items-end gap-2 bg-[var(--bg-surface)] rounded-lg px-3 py-2 border border-[var(--border)] focus-within:border-[var(--violet)]">
+          <ChatInput
             value={text}
-            onChange={(e) => {
-              setText(e.target.value);
+            onChange={(next) => {
+              setText(next);
               handleTypingEmit();
             }}
+            onSubmit={handleSend}
             placeholder={`Message #${currentChannel.name}`}
-            className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--text-muted)]/50"
           />
           <button
             type="submit"
@@ -466,18 +467,17 @@ function MessageBubble({
 
           {editing ? (
             <div className="mt-1">
-              <input
-                value={editText}
-                onChange={(e) => setEditText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") onEditSubmit();
-                  if (e.key === "Escape") onEditCancel();
-                }}
-                className="w-full bg-[var(--bg-deepest)] border border-[var(--border)] rounded px-2 py-1 text-sm outline-none focus:border-[var(--violet)]"
-                autoFocus
-              />
+              <div className="flex w-full bg-[var(--bg-deepest)] border border-[var(--border)] rounded px-2 py-1 focus-within:border-[var(--violet)]">
+                <ChatInput
+                  value={editText}
+                  onChange={setEditText}
+                  onSubmit={onEditSubmit}
+                  onEscape={onEditCancel}
+                  autoFocus
+                />
+              </div>
               <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
-                Press Enter to save, Escape to cancel
+                Enter to save, Shift+Enter for a new line, Escape to cancel
               </p>
             </div>
           ) : (

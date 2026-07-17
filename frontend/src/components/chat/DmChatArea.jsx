@@ -3,6 +3,7 @@ import { useAppStore } from "@/store";
 import { apiClient } from "@/lib/api-client";
 import { getDmMessagesRoute, MY_CONVERSATIONS_ROUTE } from "@/utils/constants";
 import MessageContent from "./MessageContent";
+import ChatInput from "./ChatInput";
 import { Send, MessageCircle } from "lucide-react";
 
 export default function DmChatArea({ socket }) {
@@ -49,7 +50,7 @@ export default function DmChatArea({ socket }) {
   };
 
   const handleSend = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!text.trim()) return;
     try {
       await apiClient.post(getDmMessagesRoute(conversationId), { text: text.trim() });
@@ -94,12 +95,12 @@ export default function DmChatArea({ socket }) {
       </div>
 
       <form onSubmit={handleSend} className="px-4 pb-4 pt-1">
-        <div className="flex items-center gap-2 bg-[var(--bg-surface)] rounded-lg px-3 py-2 border border-[var(--border)] focus-within:border-[var(--violet)]">
-          <input
+        <div className="flex items-end gap-2 bg-[var(--bg-surface)] rounded-lg px-3 py-2 border border-[var(--border)] focus-within:border-[var(--violet)]">
+          <ChatInput
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={setText}
+            onSubmit={handleSend}
             placeholder={`Message @${other?.username || ""}`}
-            className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--text-muted)]/50"
           />
           <button
             type="submit"

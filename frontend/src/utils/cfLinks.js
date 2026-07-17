@@ -24,12 +24,8 @@ export function detectProblemLinks(text) {
   return found;
 }
 
-export function looksLikeCode(segment) {
-  if (!segment) return false;
-  const lines = segment.split("\n");
-  if (lines.length < 2) return false;
-
-  const signals = [
+const LANG_SIGNALS = {
+  cpp: [
     "#include",
     "int main",
     "using namespace",
@@ -40,12 +36,87 @@ export function looksLikeCode(segment) {
     "vector<",
     "scanf",
     "printf",
-  ];
+    "std::",
+  ],
+  python: [
+    "def ",
+    "import ",
+    "from ",
+    "print(",
+    "elif ",
+    "self.",
+    "__name__",
+    "range(",
+    "len(",
+    "None",
+    "True",
+    "False",
+  ],
+  java: [
+    "public class",
+    "public static void main",
+    "System.out",
+    "private ",
+    "extends ",
+    "implements ",
+    "new ",
+    "String[]",
+  ],
+  javascript: [
+    "function ",
+    "const ",
+    "let ",
+    "=>",
+    "console.log",
+    "require(",
+    "export ",
+    "async ",
+    "await ",
+    "null",
+    "undefined",
+  ],
+  c: ["#include", "int main", "printf", "scanf", "malloc", "struct ", "sizeof"],
+};
 
+function countSignals(segment, signals) {
   let hits = 0;
   for (const s of signals) {
     if (segment.includes(s)) hits += 1;
   }
-  const hasCodeShape = segment.includes(";") || segment.includes("{");
-  return hits >= 2 && hasCodeShape;
+  return hits;
+}
+
+export function detectLanguage(segment) {
+  if (!segment) return "cpp";
+
+  let bestLang = "cpp";
+  let bestHits = 0;
+  for (const lang of Object.keys(LANG_SIGNALS)) {
+    const hits = countSignals(segment, LANG_SIGNALS[lang]);
+    if (hits > bestHits) {
+      bestHits = hits;
+      bestLang = lang;
+    }
+  }
+  return bestLang;
+}
+
+export function looksLikeCode(segment) {
+  if (!segment) return false;
+  const lines = segment.split("\n");
+  if (lines.length < 2) return false;
+
+  let bestHits = 0;
+  for (const lang of Object.keys(LANG_SIGNALS)) {
+    const hits = countSignals(segment, LANG_SIGNALS[lang]);
+    if (hits > bestHits) bestHits = hits;
+  }
+
+  const hasCodeShape =
+    segment.includes(";") ||
+    segment.includes("{") ||
+    segment.includes(":") ||
+    /^\s+\S/m.test(segment);
+
+  return bestHits >= 2 && hasCodeShape;
 }

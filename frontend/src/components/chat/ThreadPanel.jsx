@@ -3,6 +3,7 @@ import { apiClient } from "@/lib/api-client";
 import { MESSAGE_ROUTES } from "@/utils/constants";
 import { useAppStore } from "@/store";
 import MessageContent from "./MessageContent";
+import ChatInput from "./ChatInput";
 import { X, Send, Minus } from "lucide-react";
 
 export default function ThreadPanel({ channelId, messageId, onClose }) {
@@ -24,7 +25,7 @@ export default function ThreadPanel({ channelId, messageId, onClose }) {
   }, [messageId]);
 
   const handleSend = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!text.trim()) return;
     try {
       const res = await apiClient.post(`${MESSAGE_ROUTES}/channel/${channelId}`, {
@@ -84,12 +85,13 @@ export default function ThreadPanel({ channelId, messageId, onClose }) {
       </div>
 
       <form onSubmit={handleSend} className="p-2 border-t border-[var(--border)]">
-        <div className="flex items-center gap-1.5 bg-[var(--bg-surface)] rounded-lg px-2 py-1.5 border border-[var(--border)] focus-within:border-[var(--violet)]">
-          <input
+        <div className="flex items-end gap-1.5 bg-[var(--bg-surface)] rounded-lg px-2 py-1.5 border border-[var(--border)] focus-within:border-[var(--violet)]">
+          <ChatInput
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={setText}
+            onSubmit={handleSend}
             placeholder="Reply in thread..."
-            className="flex-1 bg-transparent text-xs outline-none placeholder:text-[var(--text-muted)]/50"
+            className="text-xs"
           />
           <button type="submit" disabled={!text.trim()} className="text-[var(--violet)] disabled:opacity-30">
             <Send size={16} />
