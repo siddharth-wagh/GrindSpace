@@ -4,8 +4,9 @@ import { apiClient } from "@/lib/api-client";
 import { MESSAGE_ROUTES, getChannelContestRoute } from "@/utils/constants";
 import confetti from "canvas-confetti";
 import MessageContent from "./MessageContent";
+import ThreadPanel from "./ThreadPanel";
 import StartContestButton from "../contest/StartContestButton";
-import { Send, Hash, Users, Pencil, Trash2, ChevronUp, Trophy } from "lucide-react";
+import { Send, Hash, Users, Pencil, Trash2, ChevronUp, Trophy, MessageSquare } from "lucide-react";
 
 export default function ChatArea({ socket }) {
   const {
@@ -20,6 +21,8 @@ export default function ChatArea({ socket }) {
     setShowMemberSidebar,
     setActiveContest,
     bumpLedgerTick,
+    pendingHighlight,
+    setPendingHighlight,
   } = useAppStore();
 
   const [text, setText] = useState("");
@@ -29,6 +32,8 @@ export default function ChatArea({ socket }) {
   const [editingMessage, setEditingMessage] = useState(null);
   const [editText, setEditText] = useState("");
   const [hoveredMessage, setHoveredMessage] = useState(null);
+  const [openThreadMessageId, setOpenThreadMessageId] = useState(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
 
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -51,7 +56,19 @@ export default function ChatArea({ socket }) {
         const res = await apiClient.get(`${MESSAGE_ROUTES}/channel/${channelId}`);
         setMessages(res.data.data);
         setHasMore(res.data.hasMore);
-        scrollToBottom();
+
+        if (pendingHighlight && pendingHighlight.channelId === channelId) {
+          const targetId = pendingHighlight.messageId;
+          setOpenThreadMessageId(targetId);
+          setHighlightedMessageId(targetId);
+          setPendingHighlight(null);
+          setTimeout(() => {
+            document.getElementById(`msg-${targetId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+          }, 150);
+          setTimeout(() => setHighlightedMessageId(null), 3000);
+        } else {
+          scrollToBottom();
+        }
       } catch (err) {
         console.error("Failed to fetch messages:", err);
       }
@@ -95,6 +112,13 @@ export default function ChatArea({ socket }) {
       setTypingUsers((prev) => prev.filter((u) => u.userId !== userId));
     };
     const handleLedger = () => bumpLedgerTick();
+    const handleThreadReply = (reply) => {
+      if (reply.parentMessageId) {
+        updateMessage(reply.parentMessageId, {
+          replyCount: (messages.find((m) => m._id === reply.parentMessageId)?.replyCount || 0) + 1,
+        });
+      }
+    };
     const handleAC = (data) => {
       if (!data.accepted) return;
       const solvedLine =
@@ -155,6 +179,7 @@ export default function ChatArea({ socket }) {
     socket.on("user-typing", handleTyping);
     socket.on("user-stopped-typing", handleStopTyping);
     socket.on("ledger-updated", handleLedger);
+    socket.on("new-thread-reply", handleThreadReply);
     socket.on("ac-verdict", handleAC);
     socket.on("contest-started", handleContestStarted);
     socket.on("contest-ended", handleContestEnded);
@@ -168,6 +193,7 @@ export default function ChatArea({ socket }) {
       socket.off("user-typing", handleTyping);
       socket.off("user-stopped-typing", handleStopTyping);
       socket.off("ledger-updated", handleLedger);
+      socket.off("new-thread-reply", handleThreadReply);
       socket.off("ac-verdict", handleAC);
       socket.off("contest-started", handleContestStarted);
       socket.off("contest-ended", handleContestEnded);
@@ -246,6 +272,7 @@ export default function ChatArea({ socket }) {
   }
 
   return (
+    <div className="flex-1 flex min-w-0">
     <div className="flex-1 flex flex-col bg-[var(--bg-dark)] min-w-0">
       <div className="h-12 min-h-[48px] flex items-center px-4 border-b border-[var(--border)] gap-2">
         <Hash size={20} className="text-[var(--text-muted)] shrink-0" />
@@ -261,7 +288,7 @@ export default function ChatArea({ socket }) {
         <button
           onClick={() => setShowMemberSidebar(!showMemberSidebar)}
           className={`p-1.5 rounded hover:bg-[var(--bg-surface)] transition-colors ${
-            showMemberSidebar ? "text-white" : "text-[var(--text-muted)]"
+            showMemberSidebar ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"
           }`}
         >
           <Users size={20} />
@@ -270,8 +297,9 @@ export default function ChatArea({ socket }) {
 
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto px-4 py-2 space-y-0.5 scrollbar-thin"
+        className="flex-1 overflow-y-auto px-4 py-2 scrollbar-thin"
       >
+      <div className="min-h-full flex flex-col justify-end space-y-0.5">
         {hasMore && (
           <button
             onClick={loadOlder}
@@ -282,23 +310,28 @@ export default function ChatArea({ socket }) {
           </button>
         )}
 
-        {messages.map((msg, i) => {
+        {messages
+          .filter((msg) => !msg.parentMessageId)
+          .map((msg, i, topLevel) => {
           if (msg.system) {
             return <SystemMessage key={msg._id} msg={msg} />;
           }
 
           const showHeader =
             i === 0 ||
-            messages[i - 1].sender?._id !== msg.sender?._id ||
-            messages[i - 1].system ||
-            new Date(msg.createdAt) - new Date(messages[i - 1].createdAt) > 5 * 60 * 1000;
+            topLevel[i - 1].sender?._id !== msg.sender?._id ||
+            topLevel[i - 1].system ||
+            new Date(msg.createdAt) - new Date(topLevel[i - 1].createdAt) > 5 * 60 * 1000;
 
           return (
             <MessageBubble
               key={msg._id}
               msg={msg}
+              channelId={channelId}
+              serverId={currentChannel?.server}
               showHeader={showHeader}
               isOwn={msg.sender?._id === userInfo?._id}
+              highlighted={highlightedMessageId === msg._id}
               hovered={hoveredMessage === msg._id}
               onHover={() => setHoveredMessage(msg._id)}
               onLeave={() => setHoveredMessage(null)}
@@ -307,6 +340,7 @@ export default function ChatArea({ socket }) {
                 setEditText(msg.text || "");
               }}
               onDelete={() => handleDelete(msg._id)}
+              onOpenThread={() => setOpenThreadMessageId(msg._id)}
               editing={editingMessage === msg._id}
               editText={editText}
               setEditText={setEditText}
@@ -319,6 +353,7 @@ export default function ChatArea({ socket }) {
           );
         })}
         <div ref={messagesEndRef} />
+      </div>
       </div>
 
       {typingUsers.length > 0 && (
@@ -349,6 +384,14 @@ export default function ChatArea({ socket }) {
         </div>
       </form>
     </div>
+    {openThreadMessageId && (
+      <ThreadPanel
+        channelId={channelId}
+        messageId={openThreadMessageId}
+        onClose={() => setOpenThreadMessageId(null)}
+      />
+    )}
+    </div>
   );
 }
 
@@ -363,13 +406,17 @@ function SystemMessage({ msg }) {
 
 function MessageBubble({
   msg,
+  channelId,
+  serverId,
   showHeader,
   isOwn,
+  highlighted,
   hovered,
   onHover,
   onLeave,
   onEdit,
   onDelete,
+  onOpenThread,
   editing,
   editText,
   setEditText,
@@ -384,9 +431,10 @@ function MessageBubble({
 
   return (
     <div
-      className={`relative group px-2 py-0.5 rounded hover:bg-[var(--bg-surface)]/30 ${
+      id={`msg-${msg._id}`}
+      className={`relative group px-2 py-0.5 rounded hover:bg-[var(--bg-surface)]/30 transition-colors ${
         showHeader ? "mt-4" : ""
-      }`}
+      } ${highlighted ? "bg-[var(--violet)]/15 ring-1 ring-[var(--violet)]" : ""}`}
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
     >
@@ -438,8 +486,21 @@ function MessageBubble({
                 text={msg.text}
                 edited={msg.edited}
                 problemMetadata={msg.problemMetadata}
+                messageId={msg._id}
+                channelId={channelId}
+                serverId={serverId}
               />
             )
+          )}
+
+          {!editing && (
+            <button
+              onClick={onOpenThread}
+              className="mt-1 flex items-center gap-1 text-[11px] text-[var(--text-muted)] hover:text-[var(--violet-lite)]"
+            >
+              <MessageSquare size={12} />
+              {msg.replyCount > 0 ? `${msg.replyCount} ${msg.replyCount === 1 ? "reply" : "replies"}` : "Reply in thread"}
+            </button>
           )}
         </div>
       </div>

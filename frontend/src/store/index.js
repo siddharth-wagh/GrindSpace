@@ -64,6 +64,31 @@ export const useAppStore = create((set, get) => ({
   activeView: "server",
   setActiveView: (view) => set({ activeView: view }),
 
+  bookmarkedKeys: new Set(),
+  setBookmarkedKeys: (keys) => set({ bookmarkedKeys: keys }),
+  addBookmarkedKey: (key) =>
+    set((state) => {
+      const updated = new Set(state.bookmarkedKeys);
+      updated.add(key);
+      return { bookmarkedKeys: updated };
+    }),
+  removeBookmarkedKey: (key) =>
+    set((state) => {
+      const updated = new Set(state.bookmarkedKeys);
+      updated.delete(key);
+      return { bookmarkedKeys: updated };
+    }),
+
+  conversations: [],
+  setConversations: (conversations) => set({ conversations }),
+  currentConversation: null,
+  setCurrentConversation: (conversation) => set({ currentConversation: conversation }),
+
+  // Set when a bookmarked question is opened from the profile page, so the
+  // channel view can jump to (and open the thread for) that exact message.
+  pendingHighlight: null,
+  setPendingHighlight: (highlight) => set({ pendingHighlight: highlight }),
+
   friends: [],
   setFriends: (friends) => set({ friends }),
   friendRequests: { incoming: [], outgoing: [] },
@@ -113,6 +138,9 @@ export const useAppStore = create((set, get) => ({
       friends: [],
       friendRequests: { incoming: [], outgoing: [] },
       friendsView: "online",
+      bookmarkedKeys: new Set(),
+      conversations: [],
+      currentConversation: null,
       channelLedger: [],
       ledgerTick: 0,
       activeContest: null,

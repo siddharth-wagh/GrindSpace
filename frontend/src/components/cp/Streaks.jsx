@@ -51,7 +51,7 @@ export default function Streaks({ userId, current, best }) {
       <div
         className="w-14 h-14 rounded-full flex items-center justify-center shrink-0"
         style={{
-          backgroundColor: isHot ? "rgba(236, 72, 153, 0.15)" : "rgba(124, 58, 237, 0.1)",
+          backgroundColor: isHot ? "rgba(37, 99, 235, 0.15)" : "rgba(37, 99, 235, 0.08)",
         }}
       >
         <Flame

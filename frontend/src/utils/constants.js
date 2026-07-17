@@ -24,11 +24,24 @@ export const MESSAGE_ROUTES = `${HOST}/api/messages`;
 // Friends
 export const FRIEND_ROUTES = `${HOST}/api/friends`;
 
-// Problems (unfurl + solve marks)
+// Problems (unfurl + auto-verified solves)
 export const PROBLEM_ROUTES = `${HOST}/api/problems`;
 export const UNFURL_ROUTE = `${PROBLEM_ROUTES}/unfurl`;
-export const MARK_SOLVED_ROUTE = `${PROBLEM_ROUTES}/solve`;
 export const MY_SOLVES_ROUTE = `${PROBLEM_ROUTES}/mine`;
+export const REFRESH_MY_SOLVES_ROUTE = `${PROBLEM_ROUTES}/mine/refresh`;
+
+// Bookmarks (personal saved-question list)
+export const BOOKMARK_ROUTES = `${HOST}/api/bookmarks`;
+export const ADD_BOOKMARK_ROUTE = `${BOOKMARK_ROUTES}`;
+export const MY_BOOKMARKS_ROUTE = `${BOOKMARK_ROUTES}/mine`;
+export const getRemoveBookmarkRoute = (contestId, index) =>
+  `${BOOKMARK_ROUTES}/${contestId}/${index}`;
+
+// Direct messages (1-to-1)
+export const DM_ROUTES = `${HOST}/api/dms`;
+export const START_CONVERSATION_ROUTE = `${DM_ROUTES}/start`;
+export const MY_CONVERSATIONS_ROUTE = `${DM_ROUTES}/mine`;
+export const getDmMessagesRoute = (conversationId) => `${DM_ROUTES}/${conversationId}/messages`;
 
 // Problem Ledger (derived)
 export const LEDGER_ROUTES = `${HOST}/api/ledger`;

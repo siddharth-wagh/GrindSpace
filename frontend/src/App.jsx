@@ -5,21 +5,21 @@ import CpDashboard from "./pages/dashboard";
 import { useAppStore } from "./store";
 import { useState, useEffect } from "react";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
-import { GET_USER_INFO } from "./utils/constants";
+import { GET_USER_INFO, MY_BOOKMARKS_ROUTE } from "./utils/constants";
 import { apiClient } from "./lib/api-client";
 import "./App.css";
 
 const Loader = () => (
   <div
     className="min-h-screen flex flex-col items-center justify-center gap-4"
-    style={{ background: "#07070d" }}
+    style={{ background: "#ffffff" }}
   >
     <div className="relative w-14 h-14">
       <div
         className="absolute inset-0 rounded-full animate-spin"
         style={{
-          border: "3px solid rgba(124,58,237,0.15)",
-          borderTopColor: "#7c3aed",
+          border: "3px solid rgba(37,99,235,0.15)",
+          borderTopColor: "#2563eb",
         }}
       />
     </div>
@@ -43,6 +43,7 @@ const PublicRoute = ({ children }) => {
 
 function App() {
   const setUserInfo = useAppStore((state) => state.setUserInfo);
+  const setBookmarkedKeys = useAppStore((state) => state.setBookmarkedKeys);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,6 +54,13 @@ function App() {
         });
         if (response.status === 200 && response.data._id) {
           setUserInfo(response.data);
+          try {
+            const bookmarksRes = await apiClient.get(MY_BOOKMARKS_ROUTE);
+            const keys = new Set(
+              bookmarksRes.data.data.map((b) => `${b.contestId}-${b.index}`)
+            );
+            setBookmarkedKeys(keys);
+          } catch (_) {}
         } else {
           setUserInfo(undefined);
         }

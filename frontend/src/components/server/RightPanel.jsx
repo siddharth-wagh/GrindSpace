@@ -24,7 +24,7 @@ export default function RightPanel() {
 
   const tabClass = (name) =>
     rightPanelTab === name
-      ? "flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-white border-b-2 border-[var(--violet)]"
+      ? "flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-[var(--text-primary)] border-b-2 border-[var(--violet)]"
       : "flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors";
 
   return (

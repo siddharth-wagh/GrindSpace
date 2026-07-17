@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useAppStore } from "@/store";
 import { apiClient } from "@/lib/api-client";
-import { FRIEND_ROUTES } from "@/utils/constants";
+import { FRIEND_ROUTES, START_CONVERSATION_ROUTE, MY_CONVERSATIONS_ROUTE } from "@/utils/constants";
 import {
   UserPlus,
   UserCheck,
   X,
   Check,
   Clock,
+  MessageCircle,
 } from "lucide-react";
 
 export default function FriendsPanel({ socket }) {
@@ -19,7 +20,17 @@ export default function FriendsPanel({ socket }) {
     friendsView,
     setFriendsView,
     onlineUsers,
+    setCurrentConversation,
+    setActiveView,
   } = useAppStore();
+
+  const openDm = async (friendId) => {
+    try {
+      const res = await apiClient.post(START_CONVERSATION_ROUTE, { otherUserId: friendId });
+      setCurrentConversation(res.data.data);
+      setActiveView("dm");
+    } catch (_) {}
+  };
 
   // Fetch friends + requests on mount
   useEffect(() => {
@@ -100,6 +111,7 @@ export default function FriendsPanel({ socket }) {
     { key: "all", label: "All" },
     { key: "pending", label: "Pending", count: friendRequests.incoming.length },
     { key: "add", label: "Add Friend" },
+    { key: "messages", label: "Messages" },
   ];
 
   const onlineFriends = friends.filter((f) => onlineUsers.has(f._id));
@@ -117,7 +129,7 @@ export default function FriendsPanel({ socket }) {
               onClick={() => setFriendsView(tab.key)}
               className={`px-3 py-1 rounded text-xs font-medium transition-colors relative ${
                 friendsView === tab.key
-                  ? "bg-[var(--bg-surface)] text-white"
+                  ? "bg-[var(--bg-surface)] text-[var(--text-primary)]"
                   : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface)]/50"
               }`}
             >
@@ -153,12 +165,20 @@ export default function FriendsPanel({ socket }) {
                 user={friend}
                 isOnline={onlineUsers.has(friend._id)}
                 actions={
-                  <ActionIcon
-                    icon={X}
-                    tooltip="Remove"
-                    onClick={() => handleRemove(friend._id)}
-                    className="text-red-400"
-                  />
+                  <>
+                    <ActionIcon
+                      icon={MessageCircle}
+                      tooltip="Message"
+                      onClick={() => openDm(friend._id)}
+                      className="text-[var(--violet-lite)]"
+                    />
+                    <ActionIcon
+                      icon={X}
+                      tooltip="Remove"
+                      onClick={() => handleRemove(friend._id)}
+                      className="text-red-400"
+                    />
+                  </>
                 }
               />
             ))}
@@ -234,7 +254,61 @@ export default function FriendsPanel({ socket }) {
 
         {/* Add Friend */}
         {friendsView === "add" && <AddFriendView />}
+
+        {/* Direct Message conversations */}
+        {friendsView === "messages" && <MessagesView />}
       </div>
+    </div>
+  );
+}
+
+// ─── Messages (DM conversations) ──────────────────────────────────────────────
+function MessagesView() {
+  const { userInfo, setCurrentConversation, setActiveView } = useAppStore();
+  const [conversations, setConversations] = useState([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await apiClient.get(MY_CONVERSATIONS_ROUTE);
+        setConversations(res.data.data);
+      } catch (_) {}
+    })();
+  }, []);
+
+  const openConversation = (conv) => {
+    setCurrentConversation(conv);
+    setActiveView("dm");
+  };
+
+  if (conversations.length === 0) {
+    return (
+      <p className="text-sm text-[var(--text-muted)] text-center py-8">
+        No direct messages yet. Message a friend to start one.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      {conversations.map((conv) => {
+        const other = conv.participants.find((p) => p._id !== userInfo?._id);
+        return (
+          <div
+            key={conv._id}
+            onClick={() => openConversation(conv)}
+            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--bg-surface)] transition-colors cursor-pointer"
+          >
+            <img src={other?.profilePic} className="w-9 h-9 rounded-full object-cover shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{other?.username}</p>
+              <p className="text-xs text-[var(--text-muted)] truncate">
+                {conv.lastMessage?.text || "No messages yet"}
+              </p>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

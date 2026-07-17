@@ -12,12 +12,12 @@ function formatDate(d) {
 }
 
 function squareColor(count) {
-  if (!count || count <= 0) return "rgba(124, 58, 237, 0.07)";
-  if (count === 1) return "rgba(124, 58, 237, 0.28)";
-  if (count === 2) return "rgba(124, 58, 237, 0.45)";
-  if (count <= 4) return "rgba(124, 58, 237, 0.65)";
-  if (count <= 6) return "rgba(124, 58, 237, 0.82)";
-  return "rgba(139, 92, 246, 1)";
+  if (!count || count <= 0) return "rgba(37, 99, 235, 0.08)";
+  if (count === 1) return "rgba(37, 99, 235, 0.3)";
+  if (count === 2) return "rgba(37, 99, 235, 0.48)";
+  if (count <= 4) return "rgba(37, 99, 235, 0.68)";
+  if (count <= 6) return "rgba(37, 99, 235, 0.85)";
+  return "rgba(37, 99, 235, 1)";
 }
 
 export default function Heatmap({ userId }) {

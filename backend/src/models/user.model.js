@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema(
     username: {
       type: String,
       required: true,
+      unique: true,
     },
     password: {
       type: String,
@@ -64,7 +65,6 @@ const userSchema = new mongoose.Schema(
     codeforcesHandle: {
       type: String,
       trim: true,
-      default: "",
     },
     cfLastSubmissionId: {
       type: Number,
@@ -86,9 +86,20 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    leetcodeHandle: {
+      type: String,
+      trim: true,
+    },
+    lcLastSyncedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
+
+userSchema.index({ codeforcesHandle: 1 }, { unique: true, sparse: true });
+userSchema.index({ leetcodeHandle: 1 }, { unique: true, sparse: true });
 
 const User = mongoose.model("User", userSchema);
 

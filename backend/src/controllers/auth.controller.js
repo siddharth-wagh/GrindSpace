@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { generateToken } from "../lib/util.js";
 import cloudinary from "../lib/cloudinary.js";
 import { getUserInfo } from "../lib/codeforces.js";
+import { getLeetCodeUserInfo } from "../lib/leetcode.js";
 
 export const signup = async (req, res) => {
   const { email, password, username } = req.body;
@@ -10,9 +11,9 @@ export const signup = async (req, res) => {
     if (!username || !email || !password) {
       return res.status(400).json({ messgae: "All Fields Are Required" });
     }
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ $or: [{ email }, { username }] });
 
-    if (user) return res.status(400).json({ message: "Email already exists" });
+    if (user) return res.status(400).json({ message: "Email or username already exists" });
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -43,8 +44,16 @@ export const signup = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    const { email, username, password } = req.body;
+    const identifier = email || username;
+
+    if (!identifier || !password) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    const user = await User.findOne({
+      $or: [{ email: identifier.toLowerCase() }, { username: identifier }],
+    });
 
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
@@ -101,15 +110,15 @@ export const logout = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { about, codeforcesHandle } = req.body;
-    const DEFAULT_PFP = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+    const { about, codeforcesHandle, leetcodeHandle } = req.body;
 
     const updateFields = {};
+    const unsetFields = {};
 
     if (codeforcesHandle !== undefined) {
       const trimmedHandle = codeforcesHandle.trim();
       if (trimmedHandle === "") {
-        updateFields.codeforcesHandle = "";
+        unsetFields.codeforcesHandle = "";
         updateFields.cfRating = 0;
         updateFields.cfMaxRating = 0;
         updateFields.cfRank = "";
@@ -118,6 +127,15 @@ export const updateProfile = async (req, res) => {
         const info = await getUserInfo(trimmedHandle);
         if (!info) {
           return res.status(400).json({ message: "Invalid Codeforces handle" });
+        }
+        const existing = await User.findOne({
+          codeforcesHandle: info.handle,
+          _id: { $ne: userId },
+        });
+        if (existing) {
+          return res
+            .status(409)
+            .json({ message: "This Codeforces handle is already linked to another account" });
         }
         updateFields.codeforcesHandle = info.handle;
         updateFields.cfRating = info.rating;
@@ -128,10 +146,33 @@ export const updateProfile = async (req, res) => {
       }
     }
 
+    if (leetcodeHandle !== undefined) {
+      const trimmedHandle = leetcodeHandle.trim();
+      if (trimmedHandle === "") {
+        unsetFields.leetcodeHandle = "";
+        updateFields.lcLastSyncedAt = null;
+      } else {
+        const info = await getLeetCodeUserInfo(trimmedHandle);
+        if (!info) {
+          return res.status(400).json({ message: "Invalid LeetCode handle" });
+        }
+        const existing = await User.findOne({
+          leetcodeHandle: info.username,
+          _id: { $ne: userId },
+        });
+        if (existing) {
+          return res
+            .status(409)
+            .json({ message: "This LeetCode handle is already linked to another account" });
+        }
+        updateFields.leetcodeHandle = info.username;
+        updateFields.lcLastSyncedAt = new Date();
+        updateFields.profileSetup = true;
+      }
+    }
+
     // Handle image upload via multer memory storage + cloudinary
     if (req.file) {
-      console.log(req.file);
-
       const streamifier = await import("streamifier");
 
       const streamUpload = (fileBuffer) => {
@@ -149,34 +190,28 @@ export const updateProfile = async (req, res) => {
 
       const result = await streamUpload(req.file.buffer); // wait for upload to complete
       updateFields.profilePic = result.secure_url;
-
-      if (about && about.trim() !== "") {
-        updateFields.about = about.trim();
-      }
-
-      if (Object.keys(updateFields).length > 0) {
-        updateFields.profileSetup = true;
-      }
-
-      const updatedUser = await User.findByIdAndUpdate(userId, updateFields, {
-        new: true,
-      });
-
-      return res.status(200).json(updatedUser);
-    } else {
-      // If no image, update only text fields
-      if (about && about.trim() !== "") {
-        updateFields.about = about.trim();
-        updateFields.profileSetup = true;
-      }
-
-      const updatedUser = await User.findByIdAndUpdate(userId, updateFields, {
-        new: true,
-      });
-
-      return res.status(200).json(updatedUser);
     }
+
+    if (about && about.trim() !== "") {
+      updateFields.about = about.trim();
+    }
+
+    if (Object.keys(updateFields).length > 0 || Object.keys(unsetFields).length > 0) {
+      updateFields.profileSetup = true;
+    }
+
+    const update = { $set: updateFields };
+    if (Object.keys(unsetFields).length > 0) {
+      update.$unset = unsetFields;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, update, { new: true });
+
+    return res.status(200).json(updatedUser);
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ message: "That handle is already linked to another account" });
+    }
     console.error("error in updateProfile:", error);
     res.status(500).json({ message: "Internal server error" });
   }

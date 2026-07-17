@@ -2,8 +2,10 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import morgan from "morgan";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import { notFoundHandler, errorHandler } from "./src/middlewares/error.middleware.js";
 
 import { connectDB } from "./src/lib/mongoose.config.js";
 import authRoutes from "./src/routes/auth.routes.js";
@@ -16,6 +18,8 @@ import problemRoutes from "./src/routes/problem.routes.js";
 import leaderboardRoutes from "./src/routes/leaderboard.routes.js";
 import cpRoutes from "./src/routes/cp.routes.js";
 import contestRoutes from "./src/routes/contest.routes.js";
+import bookmarkRoutes from "./src/routes/bookmark.routes.js";
+import conversationRoutes from "./src/routes/conversation.routes.js";
 import { startCfPoller } from "./src/lib/cfPoller.js";
 import { startContestScheduler } from "./src/lib/contestScheduler.js";
 import { startCronJobs } from "./src/lib/cron.js";
@@ -40,7 +44,6 @@ export const io = new Server(httpServer, {
 });
 
 export const userSocketMap = {};
-export const contestRoomMembers = {};
 
 if (process.env.REDIS_URL) {
   try {
@@ -59,6 +62,7 @@ io.on("connection", (socket) => {
   socket.on("user-online", async (userId) => {
     if (!userId) return;
     userSocketMap[socket.id] = userId;
+    socket.join(`user:${userId}`);
     try {
       await User.findByIdAndUpdate(userId, { status: "online" });
     } catch (_) {}
@@ -67,19 +71,10 @@ io.on("connection", (socket) => {
 
   socket.on("join-channel", (channelId) => {
     socket.join(`channel:${channelId}`);
-    const userId = userSocketMap[socket.id];
-    if (userId) {
-      if (!contestRoomMembers[channelId]) contestRoomMembers[channelId] = new Set();
-      contestRoomMembers[channelId].add(userId);
-    }
   });
 
   socket.on("leave-channel", (channelId) => {
     socket.leave(`channel:${channelId}`);
-    const userId = userSocketMap[socket.id];
-    if (userId && contestRoomMembers[channelId]) {
-      contestRoomMembers[channelId].delete(userId);
-    }
   });
 
   socket.on("join-server", (serverId) => {
@@ -88,6 +83,14 @@ io.on("connection", (socket) => {
 
   socket.on("leave-server", (serverId) => {
     socket.leave(`server:${serverId}`);
+  });
+
+  socket.on("join-dm", (conversationId) => {
+    socket.join(`dm:${conversationId}`);
+  });
+
+  socket.on("leave-dm", (conversationId) => {
+    socket.leave(`dm:${conversationId}`);
   });
 
   socket.on("typing-start", ({ channelId, userId, username }) => {
@@ -112,10 +115,6 @@ io.on("connection", (socket) => {
       } catch (_) {}
       io.emit("user-status-change", { userId, status: "offline" });
 
-      for (const channelId in contestRoomMembers) {
-        contestRoomMembers[channelId]?.delete(userId);
-      }
-
       delete userSocketMap[socket.id];
     }
   });
@@ -124,6 +123,7 @@ io.on("connection", (socket) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -140,6 +140,11 @@ app.use("/api/problems", problemRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/cp", cpRoutes);
 app.use("/api/contests", contestRoutes);
+app.use("/api/bookmarks", bookmarkRoutes);
+app.use("/api/dms", conversationRoutes);
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 const startServer = () => {
   httpServer.listen(PORT, "0.0.0.0", () => {

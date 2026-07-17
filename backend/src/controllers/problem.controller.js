@@ -1,6 +1,8 @@
 import Solve from "../models/solve.model.js";
+import User from "../models/user.model.js";
 import { getProblem } from "../lib/codeforces.js";
 import { findProblemLinks } from "../lib/cfLinks.js";
+import { checkOneUser } from "../lib/cfPoller.js";
 
 export const unfurlProblem = async (req, res) => {
   try {
@@ -31,36 +33,29 @@ export const unfurlProblem = async (req, res) => {
   }
 };
 
-export const markSolved = async (req, res) => {
+export const getMySolves = async (req, res) => {
   try {
-    const contestId = req.body.contestId;
-    const index = req.body.index;
-    const name = req.body.name;
-    const rating = req.body.rating;
-    const tags = req.body.tags;
-
-    const solve = await Solve.findOneAndUpdate(
-      { user: req.user._id, contestId, index },
-      {
-        $setOnInsert: {
-          name,
-          rating,
-          tags,
-          source: "manual",
-          solvedAt: new Date(),
-        },
-      },
-      { new: true, upsert: true }
-    );
-
-    return res.status(200).json({ data: solve });
+    const solves = await Solve.find({ user: req.user._id });
+    const result = [];
+    for (let i = 0; i < solves.length; i++) {
+      result.push({ contestId: solves[i].contestId, index: solves[i].index });
+    }
+    return res.status(200).json({ data: result });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 };
 
-export const getMySolves = async (req, res) => {
+// Forces an immediate Codeforces submission check for the current user
+// instead of waiting for their turn in the poller's rotation, so a "reload"
+// click reflects a just-made AC right away.
+export const refreshMySolves = async (req, res) => {
   try {
+    const user = await User.findById(req.user._id);
+    if (!user || !user.codeforcesHandle) {
+      return res.status(400).json({ message: "Link a Codeforces handle first" });
+    }
+    await checkOneUser(user);
     const solves = await Solve.find({ user: req.user._id });
     const result = [];
     for (let i = 0; i < solves.length; i++) {

@@ -27,6 +27,7 @@ export default function ChannelSidebar({ socket }) {
     servers,
     setShowMemberSidebar,
     setRightPanelTab,
+    pendingHighlight,
   } = useAppStore();
 
   const [collapsedCategories, setCollapsedCategories] = useState({});
@@ -41,9 +42,13 @@ export default function ChannelSidebar({ socket }) {
       try {
         const res = await apiClient.get(getChannelsRoute(currentServer._id));
         setChannels(res.data.data);
-        // Auto-select default text channel and join socket room
+        // Jump straight to the target channel when arriving via a bookmark
+        // deep-link; otherwise auto-select the default text channel.
+        const targetChannel = pendingHighlight
+          ? res.data.data.find((c) => c._id === pendingHighlight.channelId)
+          : null;
         const defaultChannel = res.data.data.find((c) => c.isDefault && c.type === "text");
-        const selected = defaultChannel || res.data.data.find((c) => c.type === "text");
+        const selected = targetChannel || defaultChannel || res.data.data.find((c) => c.type === "text");
         if (selected) {
           setCurrentChannel(selected);
           if (socket) socket.emit("join-channel", selected._id);
@@ -246,7 +251,7 @@ function ChannelItem({ channel, active, onClick }) {
       className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors
         ${
           active
-            ? "bg-[var(--bg-surface)] text-white"
+            ? "bg-[var(--bg-surface)] text-[var(--text-primary)]"
             : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface)]/50"
         }`}
     >

@@ -2,7 +2,7 @@ import CodeBlock from "./CodeBlock";
 import ProblemCard from "./ProblemCard";
 import { detectProblemLinks, looksLikeCode } from "@/utils/cfLinks";
 
-function MessageContent({ text, edited, problemMetadata }) {
+function MessageContent({ text, edited, problemMetadata, messageId, channelId, serverId }) {
   const source = typeof text === "string" ? text : "";
 
   const blocks = [];
@@ -84,6 +84,9 @@ function MessageContent({ text, edited, problemMetadata }) {
           contestId={link.contestId}
           index={link.index}
           meta={metaForLink(link.contestId, link.index)}
+          messageId={messageId}
+          channelId={channelId}
+          serverId={serverId}
         />
       );
     });

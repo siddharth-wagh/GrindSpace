@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Timer, Square, Loader2 } from "lucide-react";
+import { Timer, Square, Loader2, ListChecks, ExternalLink } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { useAppStore } from "@/store";
 import { getEndContestRoute } from "@/utils/constants";
 import CfHandleGate from "./CfHandleGate";
 import ContestScoreboard from "./ContestScoreboard";
 import UpsolvePanel from "./UpsolvePanel";
+import { rankColor } from "@/utils/rankColor";
 
 function formatRemaining(ms) {
   if (ms <= 0) return "00:00:00";
@@ -64,33 +65,74 @@ function ContestBoardPanel() {
     }
   }
 
+  const problems = activeContest.problems || [];
+
   return (
     <div className="flex-1 overflow-y-auto scrollbar-thin p-3 space-y-4">
-      <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Timer
-              size={15}
-              className={
-                isOver ? "text-[var(--text-muted)]" : "text-[var(--pink)]"
-              }
-            />
-            <span className="font-code text-lg font-bold text-[var(--text-primary)]">
-              {isOver ? "Finished" : formatRemaining(remaining)}
-            </span>
-          </div>
-          {!isOver ? (
+      {isOver ? (
+        <div className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2">
+          <Timer size={13} className="text-[var(--text-muted)]" />
+          <span className="text-xs font-semibold text-[var(--text-muted)]">Finished</span>
+          <span className="truncate text-xs text-[var(--text-primary)]">{activeContest.name}</span>
+        </div>
+      ) : (
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Timer size={15} className="text-[var(--pink)]" />
+              <span className="font-code text-lg font-bold text-[var(--text-primary)]">
+                {formatRemaining(remaining)}
+              </span>
+            </div>
             <span className="text-[11px] uppercase tracking-wide text-[var(--text-muted)]">
               remaining
             </span>
-          ) : null}
+          </div>
+          <div className="mt-1 truncate text-sm text-[var(--text-primary)]">
+            {activeContest.name}
+          </div>
         </div>
-        <div className="mt-1 truncate text-sm text-[var(--text-primary)]">
-          {activeContest.name}
-        </div>
-      </div>
+      )}
 
       <CfHandleGate />
+
+      {problems.length > 0 && (
+        <div>
+          <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+            <ListChecks size={13} /> Problems ({problems.length})
+          </h4>
+          <div className="space-y-1.5">
+            {problems.map((p) => {
+              const url = "https://codeforces.com/contest/" + p.contestId + "/problem/" + p.index;
+              return (
+                <a
+                  key={p.label}
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2.5 py-1.5 hover:border-[var(--violet)]"
+                >
+                  <span className="font-code text-xs font-bold text-[var(--violet-lite)] w-4 shrink-0">
+                    {p.label}
+                  </span>
+                  <span className="flex-1 truncate text-sm text-[var(--text-primary)]">
+                    {p.name || p.contestId + p.index}
+                  </span>
+                  {p.rating ? (
+                    <span
+                      className="shrink-0 font-code text-xs"
+                      style={{ color: rankColor(p.rating) }}
+                    >
+                      {p.rating}
+                    </span>
+                  ) : null}
+                  <ExternalLink size={12} className="shrink-0 text-[var(--text-muted)]" />
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <ContestScoreboard contestId={activeContest._id} refreshKey={0} socket={socket} />
 

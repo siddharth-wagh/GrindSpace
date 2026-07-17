@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAppStore } from "@/store";
 import { apiClient } from "@/lib/api-client";
 import { CREATE_SERVER, GET_MY_SERVERS, SERVER_ROUTES, LOGOUT_ROUTE } from "@/utils/constants";
-import { Plus, Users, Search, X, Upload, Globe, Lock, LogOut } from "lucide-react";
+import { Plus, Users, Search, X, Upload, Globe, Lock, LogOut, UserCircle } from "lucide-react";
+import { toast } from "sonner";
 
 export default function ServerSidebar() {
   const {
@@ -96,6 +97,19 @@ export default function ServerSidebar() {
 
       <div className="flex-1" />
       <div className="w-8 h-[2px] bg-[var(--border)] rounded-full" />
+
+      {/* Profile */}
+      <SidebarIcon onClick={() => navigate("/profile")} tooltip="Profile">
+        {userInfo?.profilePic ? (
+          <img
+            src={userInfo.profilePic}
+            alt="Profile"
+            className="w-full h-full object-cover rounded-full"
+          />
+        ) : (
+          <UserCircle size={22} />
+        )}
+      </SidebarIcon>
 
       {/* Logout */}
       <SidebarIcon onClick={handleLogout} tooltip="Logout">
@@ -282,7 +296,9 @@ function JoinServerModal({ onClose, onJoined }) {
     setLoading(true);
     setError("");
     try {
-      await apiClient.get(`${SERVER_ROUTES}/join-by-code/${inviteCode.trim()}`);
+      const res = await apiClient.get(`${SERVER_ROUTES}/join-by-code/${inviteCode.trim()}`);
+      const serverName = res.data?.data?.name || "the squad";
+      toast.success(`Joined ${serverName}`);
       onJoined();
     } catch (err) {
       setError(err.response?.data?.message || "Failed to join");
@@ -351,12 +367,12 @@ function DiscoverModal({ onClose, onJoined }) {
 
   const handleJoin = async (serverId) => {
     try {
-      const res = await apiClient.post(`${SERVER_ROUTES}/${serverId}/join`);
-      console.log("Join response:", res.data);
+      const joinedServer = results.find((s) => s._id === serverId);
+      await apiClient.post(`${SERVER_ROUTES}/${serverId}/join`);
+      toast.success(`Joined ${joinedServer?.name || "the squad"}`);
       onJoined();
     } catch (err) {
-      console.error("Join failed:", err.response?.status, err.response?.data);
-      alert(err.response?.data?.message || "Failed to join server");
+      // apiClient interceptor already surfaces a toast for the failure
     }
   };
 

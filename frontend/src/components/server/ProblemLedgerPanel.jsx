@@ -3,7 +3,7 @@ import { apiClient } from "@/lib/api-client";
 import { useAppStore } from "@/store";
 import { getLedgerRoute, getSquadLedgerRoute } from "@/utils/constants";
 import { rankColor } from "@/utils/rankColor";
-import { FileDown, FileText, Search, Inbox, Filter, X } from "lucide-react";
+import { FileDown, FileText, Search, Inbox, Filter, X, Eye } from "lucide-react";
 
 function relativeTime(value) {
   if (!value) return "";
@@ -51,6 +51,15 @@ export default function ProblemLedgerPanel() {
   const [activeTags, setActiveTags] = useState([]);
   const [solvedMode, setSolvedMode] = useState("all");
   const [pastedByFilter, setPastedByFilter] = useState("all");
+  const [revealedCodes, setRevealedCodes] = useState(new Set());
+
+  function revealCode(code) {
+    setRevealedCodes((prev) => {
+      const next = new Set(prev);
+      next.add(code);
+      return next;
+    });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -416,6 +425,7 @@ export default function ProblemLedgerPanel() {
               const squadSize = problem.squadSize || 0;
               const ratingValue = problem.rating || 0;
               const tags = problem.tags || [];
+              const revealed = revealedCodes.has(code);
               return (
                 <li
                   key={code}
@@ -433,7 +443,10 @@ export default function ProblemLedgerPanel() {
                         </span>
                         {ratingValue ? (
                           <span
-                            className="px-1.5 py-0.5 text-[10px] rounded font-code font-semibold blur-[5px] group-hover:blur-none transition-all shrink-0"
+                            className={
+                              "px-1.5 py-0.5 text-[10px] rounded font-code font-semibold transition-all shrink-0 " +
+                              (revealed ? "" : "blur-[5px]")
+                            }
                             style={{
                               color: rankColor(ratingValue),
                               backgroundColor: "var(--bg-dark)",
@@ -442,10 +455,22 @@ export default function ProblemLedgerPanel() {
                             {ratingValue}
                           </span>
                         ) : null}
+                        {!revealed ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              revealCode(code);
+                            }}
+                            className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded border border-[var(--violet)] text-[var(--violet-lite)] hover:bg-[var(--violet)]/10 shrink-0"
+                          >
+                            <Eye size={10} />
+                            Show
+                          </button>
+                        ) : null}
                       </div>
 
                       {tags.length > 0 ? (
-                        <div className="flex flex-wrap gap-1 mt-1 blur-[4px] group-hover:blur-none transition-all">
+                        <div className={"flex flex-wrap gap-1 mt-1 transition-all " + (revealed ? "" : "blur-[4px]")}>
                           {tags.map((tag) => (
                             <span
                               key={tag}

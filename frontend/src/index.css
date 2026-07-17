@@ -7,18 +7,18 @@
 
 /* ── Design Tokens ──────────────────────────────────────────── */
 :root {
-  --bg-deepest:  #07070d;
-  --bg-dark:     #0d0d1a;
-  --bg-card:     #12121f;
-  --bg-surface:  #1a1a2e;
-  --border:      rgba(124, 58, 237, 0.2);
-  --violet:      #7c3aed;
-  --violet-lite: #8b5cf6;
-  --pink:        #ec4899;
-  --text-primary: #f1f0ff;
-  --text-muted:   #9490b8;
-  --glow-violet:  0 0 20px rgba(124, 58, 237, 0.4);
-  --glow-pink:    0 0 20px rgba(236, 72, 153, 0.3);
+  --bg-deepest:  #ffffff;
+  --bg-dark:     #f8fafc;
+  --bg-card:     #ffffff;
+  --bg-surface:  #f1f5f9;
+  --border:      rgba(15, 23, 42, 0.1);
+  --violet:      #2563eb;
+  --violet-lite: #3b82f6;
+  --pink:        #3b82f6;
+  --text-primary: #0f172a;
+  --text-muted:   #64748b;
+  --glow-violet:  0 0 20px rgba(37, 99, 235, 0.25);
+  --glow-pink:    0 0 20px rgba(37, 99, 235, 0.2);
   --font-mono:    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
@@ -53,27 +53,27 @@ a:hover { color: var(--pink); }
 /* ── Custom Scrollbar ───────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(124, 58, 237, 0.35); border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(124, 58, 237, 0.6); }
+::-webkit-scrollbar-thumb { background: rgba(15, 23, 42, 0.2); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(15, 23, 42, 0.35); }
 
 /* ── Glassmorphism Utility ──────────────────────────────────── */
 @layer components {
   .glass {
-    background: rgba(18, 18, 31, 0.7);
+    background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(124, 58, 237, 0.15);
+    border: 1px solid rgba(15, 23, 42, 0.1);
   }
   .glass-dark {
-    background: rgba(7, 7, 13, 0.8);
+    background: rgba(248, 250, 252, 0.85);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(124, 58, 237, 0.1);
+    border: 1px solid rgba(15, 23, 42, 0.08);
   }
   .glow-violet { box-shadow: var(--glow-violet); }
   .glow-pink   { box-shadow: var(--glow-pink); }
   .text-gradient {
-    background: linear-gradient(135deg, #a78bfa, #ec4899);
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -81,8 +81,8 @@ a:hover { color: var(--pink); }
   .bg-mesh {
     background-color: var(--bg-deepest);
     background-image:
-      radial-gradient(ellipse at 20% 0%, rgba(124,58,237,0.12) 0%, transparent 60%),
-      radial-gradient(ellipse at 80% 100%, rgba(236,72,153,0.08) 0%, transparent 60%);
+      radial-gradient(ellipse at 20% 0%, rgba(37,99,235,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 100%, rgba(37,99,235,0.05) 0%, transparent 60%);
   }
   .font-code {
     font-family: var(--font-mono);
@@ -91,9 +91,9 @@ a:hover { color: var(--pink); }
   .skeleton {
     background: linear-gradient(
       90deg,
-      rgba(124,58,237,0.06) 25%,
-      rgba(124,58,237,0.14) 37%,
-      rgba(124,58,237,0.06) 63%
+      rgba(15,23,42,0.05) 25%,
+      rgba(15,23,42,0.1) 37%,
+      rgba(15,23,42,0.05) 63%
     );
     background-size: 400% 100%;
     animation: shimmer 1.4s ease infinite;
@@ -125,25 +125,25 @@ a:hover { color: var(--pink); }
 /* ── Shadcn/ui CSS Variables (kept for UI components) ────────── */
 @layer base {
   :root {
-    --background: 240 10% 4%;
-    --foreground:  240 10% 96%;
-    --card:        240 8% 8%;
-    --card-foreground: 240 10% 96%;
-    --popover:     240 8% 8%;
-    --popover-foreground: 240 10% 96%;
-    --primary:     262 80% 57%;
+    --background: 0 0% 100%;
+    --foreground:  222 47% 11%;
+    --card:        0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover:     0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary:     221 83% 53%;
     --primary-foreground: 0 0% 98%;
-    --secondary:   240 5% 14%;
-    --secondary-foreground: 240 10% 80%;
-    --muted:       240 5% 14%;
-    --muted-foreground: 240 5% 55%;
-    --accent:      262 80% 57%;
+    --secondary:   210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted:       210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent:      221 83% 53%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border:      240 6% 18%;
-    --input:       240 6% 16%;
-    --ring:        262 80% 57%;
+    --border:      214 32% 91%;
+    --input:       214 32% 91%;
+    --ring:        221 83% 53%;
     --radius:      0.6rem;
   }
   * { @apply border-border; }

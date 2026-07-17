@@ -7,6 +7,7 @@ import ServerSidebar from "@/components/server/ServerSidebar";
 import ChannelSidebar from "@/components/server/ChannelSidebar";
 import RightPanel from "@/components/server/RightPanel";
 import ChatArea from "@/components/chat/ChatArea";
+import DmChatArea from "@/components/chat/DmChatArea";
 import FriendsPanel from "@/components/friends/FriendsPanel";
 
 export default function Homepage() {
@@ -85,6 +86,8 @@ export default function Homepage() {
 
       {activeView === "friends" ? (
         <FriendsPanel socket={socket} />
+      ) : activeView === "dm" ? (
+        <DmChatArea socket={socket} />
       ) : currentServer ? (
         <>
           <ChannelSidebar socket={socket} />
