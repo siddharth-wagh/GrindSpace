@@ -133,6 +133,10 @@ app.use(
     credentials: true,
   })
 );
+app.get("/", (req, res) => {
+  res.status(200).send("OK");
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/servers", serverRoutes);
 app.use("/api/servers/:serverId/channels", channelRoutes);

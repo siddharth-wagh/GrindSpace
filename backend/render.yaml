@@ -13,7 +13,7 @@ services:
         value: production
       - key: PORT
         value: 5001
-      - key: MONGO_URI
+      - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET
         sync: false
