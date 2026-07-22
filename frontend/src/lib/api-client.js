@@ -2,7 +2,7 @@ import axios from "axios";
 import { toast } from "sonner";
 
 export const apiClient = axios.create({
-  baseURL:"http://localhost:8000", // Replace with your IP
+  baseURL: import.meta.env.VITE_SERVER_URL || "http://localhost:8000",
   withCredentials: true,              // Important: keeps cookies in request
 });
 
